@@ -568,7 +568,8 @@ class EyeTypeApp:
                 self._cal_buffer.append((sample.u, sample.v))
                 del self._cal_buffer[:-STABILITY_WINDOW]
                 if self._gaze_settled(now):
-                    self.cal_session.feed(sample.u, sample.v)
+                    self.cal_session.feed(sample.u, sample.v, sample.yaw,
+                                          sample.pitch, sample.scale)
             self._draw_calibration_overlay()
             if self.cal_session.done:
                 self._finish_calibration()
@@ -618,14 +619,16 @@ class EyeTypeApp:
         elif sample is not None and sample.found:
             found = True
             if self.calibration.is_calibrated:
-                nx, ny = self.calibration.map_gaze(sample.u, sample.v)
+                nx, ny = self.calibration.map_gaze(
+                    sample.u, sample.v, sample.yaw, sample.pitch, sample.scale)
             else:
                 if len(self.centre_samples) < 40:
                     self.centre_samples.append((sample.u, sample.v))
                     if len(self.centre_samples) >= 40:
                         self.auto_centre = auto_center(self.centre_samples)
-                nx, ny = self.calibration.map_gaze(sample.u, sample.v,
-                                                   auto_centre=self.auto_centre)
+                nx, ny = self.calibration.map_gaze(
+                    sample.u, sample.v, sample.yaw, sample.pitch, sample.scale,
+                    auto_centre=self.auto_centre)
             gx = nx * self.root.winfo_width()
             gy = ny * self.root.winfo_height()
 

@@ -154,7 +154,7 @@ class Calibration:
                 cal.features = tuple(data.get("features", BASE_FEATURES))
                 # an old calibration.json has a 2x3 matrix and no features
                 if cal.matrix is not None and \
-                        cal.matrix.shape[0] != len(cal.features) + 1:
+                        cal.matrix.shape[1] != len(cal.features) + 1:
                     cal.matrix = None
                 cal.pose_centre = {
                     n: float(data.get("pose_centre", {}).get(n, 0.0))
@@ -216,7 +216,7 @@ class Calibration:
 
         candidates: dict[tuple[str, ...], dict] = {}
         for feats in FEATURE_SETS:
-            if any(data[:, FEATURE_INDEX[n]].ptp() < MIN_POSE_SPREAD
+            if any(np.ptp(data[:, FEATURE_INDEX[n]]) < MIN_POSE_SPREAD
                    for n in feats if n in POSE_FEATURES):
                 continue  # pose features are constant - design is singular
             a = _design(data, feats, centre)
@@ -246,7 +246,7 @@ class Calibration:
             self.quality = None
             self._write_debug(False, spread=spread,
                               reason="no candidate fit passed the gate",
-                              candidates={list(f): c["residual"]
+                              candidates={",".join(f): c["residual"]
                                           for f, c in candidates.items()})
             return False
 
@@ -254,7 +254,7 @@ class Calibration:
         self.pose_centre = centre
         self.quality = entry["residual"]
         self.cv_error = entry["cv"]
-        self.matrix = entry["sol"].T          # (n_features+1) x 2
+        self.matrix = entry["sol"].T          # 2 x (n_features+1), rows = nx/ny
         self.save()
 
         self._write_debug(True, spread=spread, keep=entry["keep"],
@@ -263,8 +263,8 @@ class Calibration:
                           features=list(chosen),
                           cv_error=entry["cv"],
                           model_selection={
-                              list(f): {"residual": c["residual"],
-                                        "cv_error": c["cv"]}
+                              ",".join(f): {"residual": c["residual"],
+                                            "cv_error": c["cv"]}
                               for f, c in candidates.items()})
         return True
 
@@ -326,7 +326,7 @@ class Calibration:
                 values[name] - (self.pose_centre.get(name, 0.0)
                                 if name in POSE_FEATURES else 0.0)
                 for name in self.features] + [1.0])
-            nx, ny = vec @ self.matrix
+            nx, ny = self.matrix @ vec
         else:
             cu, cv = auto_centre if auto_centre is not None else self.centre
             nx = 0.5 + (u - cu) * DEFAULT_GAIN
