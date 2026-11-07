@@ -1107,6 +1107,69 @@ kbd {
   box-shadow: 0 0 10px rgba(76, 201, 240, 0.3);
 }
 
+.badge-mode.sleep-gaze {
+  background-color: #271f11;
+  border-color: #ffd166;
+  color: #ffd166;
+  box-shadow: 0 0 12px rgba(255, 209, 102, 0.4);
+}
+
+/* 5-Blink System Sleep Mode Banner */
+.tracking-sleep-banner {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.95);
+  border: 2px solid #ffd166;
+  border-radius: 40px;
+  padding: 12px 28px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(255, 209, 102, 0.3);
+  z-index: 9998;
+  cursor: pointer;
+  animation: sleepPulse 2.5s infinite ease-in-out;
+  backdrop-filter: blur(10px);
+}
+
+.sleep-banner-icon {
+  font-size: 1.6rem;
+}
+
+.sleep-banner-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.sleep-banner-content strong {
+  color: #ffd166;
+  font-size: 1.0rem;
+  letter-spacing: 0.5px;
+}
+
+.sleep-banner-content span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.sleep-banner-pill {
+  background: rgba(255, 209, 102, 0.2);
+  border: 1px solid #ffd166;
+  color: #ffd166;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+}
+
+@keyframes sleepPulse {
+  0%, 100% { box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 209, 102, 0.2); }
+  50% { box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 35px rgba(255, 209, 102, 0.5); }
+}
+
 .camera-hud {
   position: fixed;
   bottom: 16px;

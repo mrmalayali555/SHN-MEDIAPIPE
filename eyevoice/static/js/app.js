@@ -135,6 +135,100 @@ let lastGlanceTime = 0;
 let gestureCooldownUntil = 0;
 let lookLeftStartTime = 0;
 
+// ── 5-Blink System Power Toggle (Sleep / Wake Mode) ──
+let systemTrackingPaused = false;
+let blinkCounter = 0;
+let lastBlinkTimestamp = 0;
+const BLINK_SERIES_TIMEOUT_MS = 2500; // consecutive blinks within 2.5s
+const TARGET_BLINKS_FOR_TOGGLE = 5;
+
+function playSleepSound() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(580, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(260, audioCtx.currentTime + 0.28);
+    gain.gain.setValueAtTime(0.16, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.28);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.29);
+  } catch(_) {}
+}
+
+function playWakeSound() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(950, audioCtx.currentTime + 0.28);
+    gain.gain.setValueAtTime(0.16, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.28);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.29);
+  } catch(_) {}
+}
+
+function toggleSystemTrackingState() {
+  systemTrackingPaused = !systemTrackingPaused;
+  const reticle = document.getElementById('gaze-reticle');
+  const sleepBanner = document.getElementById('tracking-sleep-banner');
+  const sleepStatus = document.getElementById('hud-status');
+  const topBtn = document.getElementById('gaze-mode-btn');
+
+  // Cancel any active dwell countdown or card focus
+  cancelDwell();
+  if (lastGazeCard) {
+    lastGazeCard.classList.remove('focused');
+    lastGazeCard = null;
+  }
+
+  if (systemTrackingPaused) {
+    // ⏸️ REST / SLEEP MODE ACTIVE
+    if (reticle) reticle.style.display = 'none';
+    if (sleepBanner) sleepBanner.style.display = 'flex';
+    if (sleepStatus) {
+      sleepStatus.textContent = '⏸️ SLEEP MODE (5-Blink to Wake)';
+      sleepStatus.style.color = '#ffd166';
+    }
+    if (topBtn) {
+      topBtn.textContent = '⏸️ SLEEP MODE';
+      topBtn.classList.remove('active-gaze');
+      topBtn.classList.add('sleep-gaze');
+    }
+    showToast('⏸️ Eye Tracking Paused! Blink 5 times to wake up.', 4000);
+    speakText("Eye tracking paused. Sleep mode active.");
+    playSleepSound();
+  } else {
+    // ▶️ AWAKEN / ACTIVE MODE
+    if (reticle) reticle.style.display = 'block';
+    if (sleepBanner) sleepBanner.style.display = 'none';
+    if (sleepStatus) {
+      sleepStatus.textContent = '● Eyes & Face Tracked';
+      sleepStatus.style.color = '#3ddc84';
+    }
+    if (topBtn) {
+      topBtn.textContent = '👁️ Gaze: WEBCAM LIVE';
+      topBtn.classList.remove('sleep-gaze');
+      topBtn.classList.add('active-gaze');
+    }
+    showToast('▶️ Eye Tracking Awakened! System active.', 3000);
+    speakText("Eye tracking resumed. System active.");
+    playWakeSound();
+  }
+}
+
+window.toggleSystemTrackingState = toggleSystemTrackingState;
+
 function initGazeStream() {
   if (gazeStreamEventSource) gazeStreamEventSource.close();
 
@@ -233,16 +327,53 @@ function handleGazeData(data) {
     statusEl.style.color = data.found ? 'var(--good)' : 'var(--warn)';
   }
 
-  // Handle Voluntary Blink
-  if (data.blink && blinkChip) {
-    blinkChip.classList.add('active');
-    blinkChip.textContent = 'BLINK!';
-    if (reticle) reticle.classList.add('blinking');
-    setTimeout(() => {
-      blinkChip.classList.remove('active');
-      blinkChip.textContent = 'Blink: Ready';
-      if (reticle) reticle.classList.remove('blinking');
-    }, 280);
+  // Handle 5-Blink Consecutive Power Toggle Gesture (Sleep / Wake System)
+  if (data.blink) {
+    const now = performance.now();
+    if (now - lastBlinkTimestamp > BLINK_SERIES_TIMEOUT_MS) {
+      blinkCounter = 1;
+    } else {
+      blinkCounter++;
+    }
+    lastBlinkTimestamp = now;
+
+    if (blinkChip) {
+      blinkChip.classList.add('active');
+      blinkChip.textContent = `Blink ${blinkCounter}/5`;
+      setTimeout(() => {
+        blinkChip.classList.remove('active');
+        if (!systemTrackingPaused) {
+          blinkChip.textContent = blinkCounter > 0 ? `Blink ${blinkCounter}/5` : 'Blink: Ready';
+        }
+      }, 350);
+    }
+
+    if (reticle && !systemTrackingPaused) {
+      reticle.classList.add('blinking');
+      setTimeout(() => {
+        if (reticle) reticle.classList.remove('blinking');
+      }, 280);
+    }
+
+    // ⚡ Trigger 5-Blink Toggle: Sleep if active, Wake if sleeping!
+    if (blinkCounter >= TARGET_BLINKS_FOR_TOGGLE) {
+      blinkCounter = 0;
+      toggleSystemTrackingState();
+      return;
+    }
+  } else {
+    // Reset counter if user stopped blinking and timeout passed
+    if (blinkCounter > 0 && (performance.now() - lastBlinkTimestamp > BLINK_SERIES_TIMEOUT_MS)) {
+      blinkCounter = 0;
+      if (blinkChip && !systemTrackingPaused) {
+        blinkChip.textContent = 'Blink: Ready';
+      }
+    }
+  }
+
+  // ⏸️ If Tracking is in SLEEP MODE, completely pause gaze tracking, dwell, and card focus!
+  if (systemTrackingPaused) {
+    return;
   }
 
   if (!data.found || !reticle) {
@@ -290,8 +421,8 @@ function handleGazeData(data) {
       startDwell(card);
     }
 
-    // Voluntary Blink Confirmation!
-    if (data.blink) {
+    // Voluntary Single Blink Confirmation (only when not in multi-blink sequence)
+    if (data.blink && blinkCounter === 1 && !systemTrackingPaused) {
       cancelDwell(card);
       playClickChime();
       card.click();
