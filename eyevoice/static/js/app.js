@@ -795,11 +795,16 @@ function triggerRemoteAction(title, desc) {
 // Teammate Keyboard Integration (Part 10)
 // ============================================================================
 function openKeyboardModal() {
-  document.getElementById('keyboard-modal').classList.remove('hidden');
+  cancelDwell();
+  const modal = document.getElementById('keyboard-modal');
+  if (modal) modal.classList.remove('hidden');
 }
 
 function closeKeyboardModal() {
-  document.getElementById('keyboard-modal').classList.add('hidden');
+  cancelDwell();
+  const modal = document.getElementById('keyboard-modal');
+  if (modal) modal.classList.add('hidden');
+  goHome();
 }
 
 async function launchTeammateKeyboard() {

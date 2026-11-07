@@ -246,11 +246,15 @@
           <div class="kb-feature-item">⚡ Blink-to-Click & Dwell Timer</div>
         </div>
 
-        <div class="keyboard-actions">
-          <button class="btn-launch-keyboard" id="launch-keyboard-btn" onclick="launchTeammateKeyboard()">
+        <div class="keyboard-actions" style="display:flex;gap:14px;margin-top:16px;">
+          <button class="btn-launch-keyboard" id="launch-keyboard-btn" onclick="launchTeammateKeyboard()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)">
+            <div class="dwell-progress-bar"></div>
             🚀 Launch Eye-Tracking Keyboard Window
           </button>
-          <button class="btn-secondary" onclick="closeKeyboardModal()">Back to Dashboard</button>
+          <button class="btn-perm-back" onclick="closeKeyboardModal()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" style="font-size:1.05rem;padding:14px 22px;">
+            <div class="dwell-progress-bar"></div>
+            ⬅ BACK TO DASHBOARD
+          </button>
         </div>
         <div id="keyboard-status" class="kb-status-text"></div>
       </div>

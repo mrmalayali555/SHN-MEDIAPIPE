@@ -221,11 +221,12 @@ class EyeTypeApp:
                                         self.start_calibration, 94)
         self.btn_copy = FlatButton(btn_bar, "Copy", self.copy_text, 68)
         self.btn_clear = FlatButton(btn_bar, "Clear", self.clear_text, 68)
+        self.btn_back = FlatButton(btn_bar, "\u2b05 Exit / Back", self.quit, 110, accent=True)
         for b in (self.btn_minus, self.btn_plus, self.btn_blink, self.btn_calibrate,
-                  self.btn_copy, self.btn_clear):
+                  self.btn_copy, self.btn_clear, self.btn_back):
             b.canvas.pack(side="left", padx=3)
         self.header_buttons = [self.btn_minus, self.btn_plus, self.btn_blink,
-                               self.btn_calibrate, self.btn_copy, self.btn_clear]
+                               self.btn_calibrate, self.btn_copy, self.btn_clear, self.btn_back]
 
         # ----------------------------------------------------- display --
         self.display = tk.Text(root, height=4, wrap="word", font=theme.FONT_DISPLAY,

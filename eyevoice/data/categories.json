@@ -1108,6 +1108,228 @@
       "category": "Quick Responses",
       "emergency": false,
       "timestamp": "2026-11-07 21:39:40"
+    },
+    {
+      "text": "No.",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:39:40"
+    },
+    {
+      "text": "Yes.",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:39:43"
+    },
+    {
+      "text": "I am hungry. Can I have some food?",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:39:47"
+    },
+    {
+      "text": "I am hungry. Can I have some food?",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:39:48"
+    },
+    {
+      "text": "Can I have a blanket, please?",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:39:51"
+    },
+    {
+      "text": "I am hungry. Can I have some food?",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:39:56"
+    },
+    {
+      "text": "I am hungry. Can I have some food?",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:40:01"
+    },
+    {
+      "text": "I am hungry. Can I have some food?",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:40:03"
+    },
+    {
+      "text": "I want to sleep now.",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:40:07"
+    },
+    {
+      "text": "I am hungry. Can I have some food?",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:40:08"
+    },
+    {
+      "text": "I want to sleep now.",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:40:09"
+    },
+    {
+      "text": "I want to sleep now.",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:40:11"
+    },
+    {
+      "text": "I want to sleep now.",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:40:20"
+    },
+    {
+      "text": "I want to sleep now.",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:40:23"
+    },
+    {
+      "text": "I need to use the toilet.",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:40:24"
+    },
+    {
+      "text": "I need some water, please.",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:40:25"
+    },
+    {
+      "text": "Please turn me to my right side.",
+      "category": "Bed & Position",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:40:34"
+    },
+    {
+      "text": "Please lower the bed.",
+      "category": "Bed & Position",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:40:43"
+    },
+    {
+      "text": "Please lower the bed.",
+      "category": "Bed & Position",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:40:43"
+    },
+    {
+      "text": "Please adjust my leg position.",
+      "category": "Bed & Position",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:40:59"
+    },
+    {
+      "text": "Please lower the bed.",
+      "category": "Bed & Position",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:41:00"
+    },
+    {
+      "text": "Please lower the bed.",
+      "category": "Bed & Position",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:41:01"
+    },
+    {
+      "text": "Please increase the volume.",
+      "category": "Room & Devices",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:41:06"
+    },
+    {
+      "text": "Please turn off the light.",
+      "category": "Room & Devices",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:41:07"
+    },
+    {
+      "text": "Please decrease the volume.",
+      "category": "Room & Devices",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:41:08"
+    },
+    {
+      "text": "Please turn me to my left side.",
+      "category": "Bed & Position",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:41:51"
+    },
+    {
+      "text": "Please adjust my leg position.",
+      "category": "Bed & Position",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:41:52"
+    },
+    {
+      "text": "Please adjust my leg position.",
+      "category": "Bed & Position",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:41:55"
+    },
+    {
+      "text": "Please adjust my leg position.",
+      "category": "Bed & Position",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:41:57"
+    },
+    {
+      "text": "Please adjust my head position.",
+      "category": "Bed & Position",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:41:58"
+    },
+    {
+      "text": "Please adjust my leg position.",
+      "category": "Bed & Position",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:41:59"
+    },
+    {
+      "text": "Please adjust my leg position.",
+      "category": "Bed & Position",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:42:03"
+    },
+    {
+      "text": "Can I have a blanket, please?",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:42:24"
+    },
+    {
+      "text": "Can I have a blanket, please?",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:42:26"
+    },
+    {
+      "text": "Can I have a blanket, please?",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:42:28"
+    },
+    {
+      "text": "Can you bring me my glasses?",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:42:32"
+    },
+    {
+      "text": "Can you bring me my glasses?",
+      "category": "My Needs",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:42:34"
     }
   ]
 }
