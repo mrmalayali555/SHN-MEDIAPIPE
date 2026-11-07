@@ -2144,6 +2144,86 @@ kbd {
   gap: 4px;
 }
 
+/* ==========================================================================
+   Gemini AI Dynamic Followups & Open Communicator Styles
+   ========================================================================== */
+.isl-ai-followups-bar {
+  background: linear-gradient(135deg, rgba(88, 28, 135, 0.3) 0%, rgba(30, 27, 75, 0.4) 100%);
+  border: 1px solid #7c3aed;
+  border-radius: 12px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.isl-ai-followups-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #c084fc;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.isl-ai-followups-list {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  flex: 1;
+}
+
+.isl-ai-pill {
+  background: #1e1b4b;
+  border: 1px solid #8b5cf6;
+  color: #f3e8ff;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.isl-ai-pill:hover, .isl-ai-pill.active-dwell {
+  background: #3b0764;
+  border-color: #c084fc;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.isl-ai-generate-btn {
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
+}
+
+.isl-ai-generate-btn:hover, .isl-ai-generate-btn.active-dwell {
+  background: linear-gradient(135deg, #9333ea 0%, #c084fc 100%);
+  transform: translateY(-2px);
+}
+
+
 
 
 

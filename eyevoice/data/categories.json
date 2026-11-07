@@ -861,6 +861,66 @@
       "category": "Quick Responses",
       "emergency": false,
       "timestamp": "2026-11-07 22:44:42"
+    },
+    {
+      "text": "I am feeling angry.",
+      "category": "Emotions",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:45:28"
+    },
+    {
+      "text": "I am feeling bored.",
+      "category": "Emotions",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:45:30"
+    },
+    {
+      "text": "Please leave me alone for now.",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:46:18"
+    },
+    {
+      "text": "Please help me.",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:46:21"
+    },
+    {
+      "text": "Please leave me alone for now.",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:46:25"
+    },
+    {
+      "text": "No.",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:47:00"
+    },
+    {
+      "text": "What is your name?",
+      "category": "Sign Language (ISL - Forehead & Mind)",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:47:22"
+    },
+    {
+      "text": "What do you think? What should we do?",
+      "category": "Sign Language (ISL - Forehead & Mind)",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:47:25"
+    },
+    {
+      "text": "I cannot breathe comfortably! Please help me immediately!",
+      "category": "Sign Language (ISL - Chest & Heart)",
+      "emergency": true,
+      "timestamp": "2026-11-07 22:47:35"
+    },
+    {
+      "text": "Yes.",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:56:29"
     }
   ]
 }

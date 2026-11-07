@@ -946,8 +946,129 @@ const ISL_BODY_ANCHORS = [
         urgent: true
       }
     ]
+  },
+  {
+    id: "gemini_anything",
+    name: "✨ AI (Speak Anything)",
+    icon: "✨",
+    hint: "Gemini AI: jokes, family messages, doctor talks, anything you want",
+    gestureExplainer: "Powered by Google Gemini AI: Infinite Open-Ended First-Person Speech Generation",
+    expressions: [
+      {
+        id: "ai_joke",
+        icon: "😄",
+        gesture: "AI Creative Humor",
+        sentence: "Can someone tell me a good joke, or would you like to hear one?",
+        meaning: "Casual conversation and laughter",
+        urgent: false
+      },
+      {
+        id: "ai_family",
+        icon: "❤️",
+        gesture: "AI Affection & Love",
+        sentence: "Please tell my family that I love them deeply and appreciate everything.",
+        meaning: "Heartfelt personal message to loved ones",
+        urgent: false
+      },
+      {
+        id: "ai_symptom",
+        icon: "🩺",
+        gesture: "AI Detailed Clinical Description",
+        sentence: "I want to explain to the doctor that my numbness is spreading slightly today.",
+        meaning: "Detailed custom clinical symptom description",
+        urgent: true
+      },
+      {
+        id: "ai_tea",
+        icon: "☕",
+        gesture: "AI Exact Preference",
+        sentence: "Could I please get some warm tea with just a tiny bit of honey?",
+        meaning: "Specific personalized drink request",
+        urgent: false
+      },
+      {
+        id: "ai_news",
+        icon: "📰",
+        gesture: "AI Curiosity & World",
+        sentence: "What is happening outside today? How is the weather and news?",
+        meaning: "Connecting to the outside world",
+        urgent: false
+      },
+      {
+        id: "ai_custom_prompt",
+        icon: "💡",
+        gesture: "AI Free-Form Topic Expander",
+        sentence: "I want to talk about something specific. Please ask Gemini AI for me.",
+        meaning: "Open-ended custom AI topic expansion",
+        urgent: false
+      }
+    ]
   }
 ];
+
+let geminiFollowups = [];
+let geminiLoading = false;
+
+async function fetchGeminiFollowups(sentence) {
+  try {
+    const res = await fetch('/api/gemini/followups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sentence: sentence })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      geminiFollowups = data.followups || [];
+      renderView();
+    }
+  } catch (err) {
+    console.error("Gemini followups error:", err);
+  }
+}
+
+function triggerAIFollowup(sentence, icon = '💬') {
+  speakText(sentence);
+  postMessageToServer(sentence, "Gemini AI Follow-up", false);
+  setMessage(sentence, icon);
+  showToast(`🗣️ Spoke: "${sentence}"`);
+  islLastSpokenText = sentence;
+  fetchGeminiFollowups(sentence);
+}
+
+async function generateFreshWithGemini(topic = '') {
+  const currentAnchor = ISL_BODY_ANCHORS.find(a => a.id === islSelectedAnchor) || ISL_BODY_ANCHORS[0];
+  const queryTopic = topic || currentAnchor.name;
+  geminiLoading = true;
+  showToast(`✨ Gemini is crafting speech for: "${queryTopic}"...`);
+  
+  try {
+    const res = await fetch('/api/gemini/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cue: queryTopic, context: currentAnchor.gestureExplainer })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.options && data.options.length > 0) {
+        currentAnchor.expressions = data.options;
+        showToast(`✨ Generated 6 new options for "${queryTopic}"!`);
+      }
+    }
+  } catch (err) {
+    console.error("Gemini generate error:", err);
+    showToast("Gemini offline. Using local speech engine.");
+  } finally {
+    geminiLoading = false;
+    renderView();
+  }
+}
+
+function askCustomAIPrompt() {
+  const prompt = window.prompt("What would you like to speak about? (e.g., 'cricket score', 'tell a joke', 'message to my daughter', 'side effect of medicine'):");
+  if (prompt && prompt.trim()) {
+    generateFreshWithGemini(prompt.trim());
+  }
+}
 
 function selectISLAnchor(anchorId) {
   islSelectedAnchor = anchorId;
@@ -989,6 +1110,9 @@ function triggerISLExpression(exprId) {
       }
     }, 450);
   }
+
+  // Fetch intelligent Gemini follow-ups in background
+  fetchGeminiFollowups(expr.sentence);
 }
 
 function replayISL() {
@@ -1005,18 +1129,18 @@ function renderISLView(container) {
 
   let html = `
     <div class="isl-practical-workspace">
-      <!-- LEFT COLUMN: 6 BODY LOCATION ANCHORS (ZERO SCROLLING) -->
+      <!-- LEFT COLUMN: 7 BODY & AI ANCHORS (ZERO SCROLLING) -->
       <div class="isl-anchors-column">
         <div class="isl-anchors-header">
           <div class="isl-anchors-title">
-            <span>🤟</span> Body Sign Anchors
+            <span>🤟</span> Body Sign &amp; AI Anchors
           </div>
           <span class="isl-anchors-sub">Look to switch</span>
         </div>
 
         <div class="isl-anchors-list">
           ${ISL_BODY_ANCHORS.map(anchor => `
-            <div class="isl-anchor-btn ${islSelectedAnchor === anchor.id ? 'active' : ''}"
+            <div class="isl-anchor-btn ${islSelectedAnchor === anchor.id ? 'active' : ''} ${anchor.id === 'gemini_anything' ? 'ai-anchor-card' : ''}"
                  onmouseenter="startDwell(this)"
                  onmouseleave="cancelDwell(this)"
                  onclick="selectISLAnchor('${anchor.id}')"
@@ -1040,24 +1164,50 @@ function renderISLView(container) {
       <div class="isl-expressions-column">
         <!-- TOP ACTIVE BANNER -->
         <div class="isl-active-bar">
-          <div style="display:flex;align-items:center;gap:12px;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <div class="isl-active-location-badge">
               <span>${currentAnchor.icon}</span> ${currentAnchor.name}
             </div>
             <span class="isl-gesture-explainer">${currentAnchor.gestureExplainer}</span>
           </div>
 
-          <div style="display:flex;align-items:center;gap:10px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="isl-ai-generate-btn" onclick="generateFreshWithGemini()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" title="Generate 6 brand new open sentences using Gemini AI">
+              <div class="dwell-progress-bar"></div>
+              ✨ AI Expand Sentences
+            </button>
+            <button class="isl-speech-replay-btn" onclick="askCustomAIPrompt()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" title="Speak about any custom topic">
+              <div class="dwell-progress-bar"></div>
+              💡 Speak Anything
+            </button>
             <button class="isl-speech-replay-btn" onclick="replayISL()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" title="Replay the last spoken sentence">
               <div class="dwell-progress-bar"></div>
               🔁 Replay
             </button>
-            <button class="btn-back" onclick="goHome()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" style="margin:0;padding:8px 16px;font-size:0.88rem;">
+            <button class="btn-back" onclick="goHome()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" style="margin:0;padding:8px 14px;font-size:0.85rem;">
               <div class="dwell-progress-bar"></div>
-              ⬅ Back Home
+              ⬅ Back
             </button>
           </div>
         </div>
+
+        <!-- DYNAMIC GEMINI SMART FOLLOW-UPS BAR (IF AVAILABLE) -->
+        ${geminiFollowups.length > 0 ? `
+          <div class="isl-ai-followups-bar">
+            <div class="isl-ai-followups-label">
+              <span>🔮</span> AI Smart Follow-ups:
+            </div>
+            <div class="isl-ai-followups-list">
+              ${geminiFollowups.map(f => `
+                <button class="isl-ai-pill" onclick="triggerAIFollowup('${f.sentence.replace(/'/g, "\\'")}', '${f.icon || '💬'}')" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" title="${f.meaning || ''}">
+                  <div class="dwell-progress-bar"></div>
+                  <span>${f.icon || '💬'}</span>
+                  <span>"${f.sentence}"</span>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
 
         <!-- 6 LARGE EXPRESSION CARDS (2x3 GRID - 100% IN VIEWPORT) -->
         <div class="cards-grid isl-practical-grid">

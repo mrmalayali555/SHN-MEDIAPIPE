@@ -176,6 +176,30 @@ def interpret_isl_sequence():
     return jsonify(result)
 
 
+# ---- Gemini AI Open-Ended Communicator API ----
+@app.route("/api/gemini/generate", methods=["POST"])
+def gemini_generate_endpoint():
+    """Dynamically generate personalized, open-ended sentences using Gemini AI."""
+    from eyevoice.gemini_service import generate_open_speech
+    payload = request.get_json(force=True) or {}
+    cue = payload.get("cue", "").strip()
+    context = payload.get("context", "")
+    data = _load_data()
+    recent = [m.get("text", "") for m in data.get("message_history", [])][-5:]
+    result = generate_open_speech(cue, context, recent)
+    return jsonify(result)
+
+
+@app.route("/api/gemini/followups", methods=["POST"])
+def gemini_followups_endpoint():
+    """Predict natural conversational follow-ups after speaking a sentence."""
+    from eyevoice.gemini_service import generate_conversation_followups
+    payload = request.get_json(force=True) or {}
+    sentence = payload.get("sentence", "").strip()
+    followups = generate_conversation_followups(sentence)
+    return jsonify({"followups": followups})
+
+
 # ---- message history ----
 @app.route("/api/messages", methods=["GET"])
 def get_messages():

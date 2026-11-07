@@ -4,4 +4,7 @@ __pycache__/
 *.pyo
 .DS_Store
 Thumbs.db
+.env
+*.env
+eyevoice/local_config.json
 
