@@ -46,12 +46,36 @@ function toggleDwellMode() {
   showToast(dwellEnabled ? "Eye Dwell auto-selection enabled" : "Eye Dwell selection disabled (use click/enter)");
 }
 
+let audioCtx = null;
+function playClickChime() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1250, audioCtx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.09);
+  } catch(_) {}
+}
+
 function startDwell(cardEl) {
   if (!dwellEnabled || !cardEl) return;
   cancelDwell();
 
   activeDwellCard = cardEl;
-  const hBar = cardEl.querySelector('.dwell-progress-bar');
+  let hBar = cardEl.querySelector('.dwell-progress-bar');
+  if (!hBar && !cardEl.classList.contains('btn-perm-back')) {
+    hBar = document.createElement('div');
+    hBar.className = 'dwell-progress-bar';
+    cardEl.appendChild(hBar);
+  }
   const vBar = cardEl.querySelector('.dwell-progress-bar-vertical');
   const startTime = performance.now();
 
@@ -63,10 +87,10 @@ function startDwell(cardEl) {
     if (vBar) vBar.style.height = progress + '%';
 
     if (elapsed >= DWELL_TIME_MS) {
-      // Dwell fired - click the card!
       if (hBar) hBar.style.width = '0%';
       if (vBar) vBar.style.height = '0%';
       activeDwellCard = null;
+      playClickChime();
       cardEl.click();
     } else {
       dwellAnimFrame = requestAnimationFrame(step);
@@ -228,43 +252,31 @@ function handleGazeData(data) {
   // 1. Check Eye Gesture for BACK: Look Left -> Look Right -> Look Left
   checkEyeGestureBack(data.x);
 
-  // 2. High-Accuracy Adaptive Smoothing Filter
+  // 2. High-Accuracy, Zero-Latency Targeting
+  // OneEuro filter in browser_tracker.js already eliminates jitter
   const targetX = data.x * window.innerWidth;
   const targetY = data.y * window.innerHeight;
 
-  const dx = targetX - smoothX;
-  const dy = targetY - smoothY;
-  const dist = Math.hypot(dx, dy);
+  // Responsive interpolation (< 20ms visual tracking)
+  smoothX = smoothX * 0.15 + targetX * 0.85;
+  smoothY = smoothY * 0.15 + targetY * 0.85;
 
-  // If movement is micro-jitter, keep smoothX, smoothY steady
-  if (dist > DEADBAND_PX) {
-    const alpha = Math.min(0.42, Math.max(0.14, dist / 320));
-    smoothX += dx * alpha;
-    smoothY += dy * alpha;
-  }
-
-  reticle.style.left = smoothX + 'px';
-  reticle.style.top = smoothY + 'px';
-
-  // 3. Magnetic Card Snapping (Sticky Focus prevents jitter while dwelling)
+  // 3. AAC Assisted Magnetic Target Lock
+  const magneticHit = findMagneticTarget(smoothX, smoothY);
   let card = null;
 
-  if (lastGazeCard && lastGazeCard.isConnected) {
-    const rect = lastGazeCard.getBoundingClientRect();
-    const inStickyZone = (
-      smoothX >= rect.left - HYSTERESIS_MARGIN &&
-      smoothX <= rect.right + HYSTERESIS_MARGIN &&
-      smoothY >= rect.top - HYSTERESIS_MARGIN &&
-      smoothY <= rect.bottom + HYSTERESIS_MARGIN
-    );
-    if (inStickyZone) {
-      card = lastGazeCard;
-    }
-  }
-
-  if (!card) {
-    const el = document.elementFromPoint(smoothX, smoothY);
-    card = el ? el.closest('.card') : null;
+  if (magneticHit) {
+    card = magneticHit.el;
+    // Magnetic Attraction: gently center the reticle on the card
+    const pullX = smoothX * 0.25 + magneticHit.cx * 0.75;
+    const pullY = smoothY * 0.25 + magneticHit.cy * 0.75;
+    reticle.style.left = pullX + 'px';
+    reticle.style.top = pullY + 'px';
+    reticle.classList.add('magnetic-locked');
+  } else {
+    reticle.style.left = smoothX + 'px';
+    reticle.style.top = smoothY + 'px';
+    reticle.classList.remove('magnetic-locked');
   }
 
   if (card) {
@@ -278,9 +290,10 @@ function handleGazeData(data) {
       startDwell(card);
     }
 
-    // Voluntary Blink-to-Click Confirmation!
+    // Voluntary Blink Confirmation!
     if (data.blink) {
       cancelDwell(card);
+      playClickChime();
       card.click();
       showToast("Blink Confirmed!");
     }
@@ -293,7 +306,47 @@ function handleGazeData(data) {
   }
 }
 
+// ── AAC Assisted Magnetic Target Snapping ──
+function findMagneticTarget(x, y) {
+  // If already locked on a card, keep it locked until gaze moves > 100px away
+  if (lastGazeCard && lastGazeCard.isConnected) {
+    const rect = lastGazeCard.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dist = Math.hypot(x - cx, y - cy);
+    const holdRadius = Math.max(rect.width, rect.height) * 0.72 + 50;
+    if (dist < holdRadius) {
+      return { el: lastGazeCard, cx, cy };
+    }
+  }
+
+  // Find nearest interactive AAC card/button within 85px
+  const selector = '.card, .isl-board-card, .isl-anchor-btn, .btn-perm-back, .isl-ai-pill, .isl-body-region-btn, .btn-quick';
+  const candidates = document.querySelectorAll(selector);
+  let best = null;
+  let minDistance = 85;
+
+  for (let i = 0; i < candidates.length; i++) {
+    const el = candidates[i];
+    if (el.offsetParent === null) continue;
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dist = Math.hypot(x - cx, y - cy);
+    if (dist < minDistance) {
+      minDistance = dist;
+      best = { el, cx, cy };
+    }
+  }
+
+  return best;
+}
+
 async function recenterGaze() {
+  if (typeof window.startQuickCalibration === 'function') {
+    window.startQuickCalibration();
+    return;
+  }
   try {
     const res = await fetch('/api/recenter-gaze', { method: 'POST' });
     if (res.ok) {

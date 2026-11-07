@@ -22,6 +22,9 @@
       <button class="badge-mode" id="dwell-toggle-btn" onclick="toggleDwellMode()" title="Toggle Auto-Click when resting gaze on a card">
         ⏱️ Dwell Click: ON (0.8s)
       </button>
+      <button class="badge-mode btn-calib-action" id="quick-calib-btn" onclick="recenterGaze()" title="Lock eye tracking to screen center (1 second)">
+        🎯 Calibrate (1s)
+      </button>
     </div>
     <div class="topbar-center" id="message-bar">
       <div class="msg-box">
@@ -346,6 +349,21 @@
 
   <!-- Hidden video element for browser camera access -->
   <video id="tracker-video" autoplay playsinline muted style="position:absolute;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;"></video>
+
+  <!-- ===== 1-SECOND QUICK CALIBRATION TARGET OVERLAY ===== -->
+  <div id="calibration-overlay" class="calibration-overlay" style="display: none;">
+    <div class="calibration-box">
+      <div class="calibration-target-ring">
+        <div class="calibration-target-pulse"></div>
+        <div class="calibration-target-center"></div>
+      </div>
+      <h3 id="calibration-text">🎯 Look at the green center dot…</h3>
+      <p>Hold your gaze on the dot for 1 second to calibrate your screen</p>
+      <div class="calibration-bar-track">
+        <div id="calibration-progress-fill" class="calibration-bar-fill"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- ===== TOAST NOTIFICATION ===== -->
   <div id="toast" class="toast hidden">
