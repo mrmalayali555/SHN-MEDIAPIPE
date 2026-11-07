@@ -42,18 +42,21 @@ function startDwell(cardEl) {
   cancelDwell();
 
   activeDwellCard = cardEl;
-  const bar = cardEl.querySelector('.dwell-progress-bar');
+  const hBar = cardEl.querySelector('.dwell-progress-bar');
+  const vBar = cardEl.querySelector('.dwell-progress-bar-vertical');
   const startTime = performance.now();
 
   function step(now) {
     if (activeDwellCard !== cardEl) return;
     const elapsed = now - startTime;
     const progress = Math.min(100, (elapsed / DWELL_TIME_MS) * 100);
-    if (bar) bar.style.width = progress + '%';
+    if (hBar) hBar.style.width = progress + '%';
+    if (vBar) vBar.style.height = progress + '%';
 
     if (elapsed >= DWELL_TIME_MS) {
       // Dwell fired - click the card!
-      if (bar) bar.style.width = '0%';
+      if (hBar) hBar.style.width = '0%';
+      if (vBar) vBar.style.height = '0%';
       activeDwellCard = null;
       cardEl.click();
     } else {
@@ -70,8 +73,10 @@ function cancelDwell(cardEl) {
     dwellAnimFrame = null;
   }
   if (activeDwellCard) {
-    const bar = activeDwellCard.querySelector('.dwell-progress-bar');
-    if (bar) bar.style.width = '0%';
+    const hBar = activeDwellCard.querySelector('.dwell-progress-bar');
+    const vBar = activeDwellCard.querySelector('.dwell-progress-bar-vertical');
+    if (hBar) hBar.style.width = '0%';
+    if (vBar) vBar.style.height = '0%';
     activeDwellCard = null;
   }
 }
@@ -90,10 +95,11 @@ let smoothY = window.innerHeight / 2;
 const DEADBAND_PX = 12; // ignores micro-jitter under 12px
 const HYSTERESIS_MARGIN = 38; // sticky magnetic card lock
 
-// Eye Gesture State (Left -> Right -> Left = BACK)
+// Eye Gesture State (Left -> Right -> Left = BACK & Look-Left Hold)
 let gestureSequence = [];
 let lastGlanceTime = 0;
 let gestureCooldownUntil = 0;
+let lookLeftStartTime = 0;
 
 function initGazeStream() {
   if (gazeStreamEventSource) gazeStreamEventSource.close();
@@ -117,36 +123,59 @@ function initGazeStream() {
 }
 
 function checkEyeGestureBack(normX) {
+  if (currentView === 'home') return;
   const now = performance.now();
   if (now < gestureCooldownUntil) return;
 
-  // Invalidate sequence if inactive for over 1.6s
+  // Direct Method 1: Just look to the left side of the screen for 0.7s -> INSTANT BACK!
+  const edgeBack = document.getElementById('left-edge-back');
+  const edgeBar = document.querySelector('.dwell-progress-bar-vertical');
+  if (normX < 0.28) {
+    if (!lookLeftStartTime) lookLeftStartTime = now;
+    const elapsed = now - lookLeftStartTime;
+    if (edgeBack) edgeBack.classList.add('active-dwell');
+    if (edgeBar) edgeBar.style.height = Math.min(100, (elapsed / 700) * 100) + '%';
+
+    if (elapsed >= 700) {
+      lookLeftStartTime = 0;
+      if (edgeBar) edgeBar.style.height = '0%';
+      gestureCooldownUntil = now + 1500;
+      triggerBackGesture("Look-Left");
+      return;
+    }
+  } else {
+    lookLeftStartTime = 0;
+    if (edgeBack) edgeBack.classList.remove('active-dwell');
+    if (edgeBar) edgeBar.style.height = '0%';
+  }
+
+  // Method 2: Eye Sequence: Look Left -> Look Right -> Look Left
   if (now - lastGlanceTime > 1600) {
     gestureSequence = [];
   }
 
   let glance = null;
-  if (normX < 0.25) glance = 'L'; // Looked left
-  else if (normX > 0.75) glance = 'R'; // Looked right
+  if (normX < 0.36) glance = 'L'; // Looked left
+  else if (normX > 0.64) glance = 'R'; // Looked right
 
   if (glance) {
     const last = gestureSequence[gestureSequence.length - 1];
     if (glance !== last) {
       gestureSequence.push(glance);
       lastGlanceTime = now;
-      
+
       const pattern = gestureSequence.slice(-3).join('');
       if (pattern === 'LRL') {
         gestureSequence = [];
-        gestureCooldownUntil = now + 1600;
-        triggerBackGesture();
+        gestureCooldownUntil = now + 1500;
+        triggerBackGesture("Left-Right-Left Gesture");
       }
     }
   }
 }
 
-function triggerBackGesture() {
-  showToast("↩ Eye Gesture: Left ➔ Right ➔ Left = BACK TO DASHBOARD");
+function triggerBackGesture(reason = "Eye Gesture") {
+  showToast(`↩ ${reason} ➔ Back to Dashboard!`);
   speakText("Going back");
   closeAllModals();
   goHome();
@@ -339,16 +368,23 @@ function renderView() {
   const breadcrumbSep = document.getElementById('breadcrumb-separator');
   const homeBtn = document.getElementById('home-btn');
 
+  const persistentBack = document.getElementById('btn-persistent-back');
+  const edgeBack = document.getElementById('left-edge-back');
+
   if (currentView === 'home') {
     homeBtn.classList.add('active');
     breadcrumbCurrent.style.display = 'none';
     breadcrumbSep.style.display = 'none';
+    if (persistentBack) persistentBack.classList.add('hidden');
+    if (edgeBack) edgeBack.classList.add('hidden');
     renderHomeView(content);
   } else {
     homeBtn.classList.remove('active');
     breadcrumbCurrent.style.display = 'inline-block';
     breadcrumbSep.style.display = 'inline-block';
     breadcrumbCurrent.textContent = currentCategory.name;
+    if (persistentBack) persistentBack.classList.remove('hidden');
+    if (edgeBack) edgeBack.classList.remove('hidden');
     renderCategoryView(content);
   }
 
@@ -516,9 +552,23 @@ function clearVisualTokens() {
 }
 
 function goHome() {
+  cancelDwell();
+  lastGazeCard = null;
+  lookLeftStartTime = 0;
   currentView = 'home';
   currentCategory = null;
   focusedIndex = 0;
+
+  const edgeBack = document.getElementById('left-edge-back');
+  if (edgeBack) {
+    edgeBack.classList.add('hidden');
+    edgeBack.classList.remove('active-dwell');
+  }
+  const edgeBar = document.querySelector('.dwell-progress-bar-vertical');
+  if (edgeBar) edgeBar.style.height = '0%';
+  const persistentBack = document.getElementById('btn-persistent-back');
+  if (persistentBack) persistentBack.classList.add('hidden');
+
   renderView();
 }
 

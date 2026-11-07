@@ -856,6 +856,96 @@
       "category": "Quick Responses",
       "emergency": false,
       "timestamp": "2026-11-07 21:28:40"
+    },
+    {
+      "text": "Please call my family.",
+      "category": "People",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:30:08"
+    },
+    {
+      "text": "Please call my father.",
+      "category": "People",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:30:16"
+    },
+    {
+      "text": "Please call my mother.",
+      "category": "People",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:30:17"
+    },
+    {
+      "text": "Please call my father.",
+      "category": "People",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:30:19"
+    },
+    {
+      "text": "Please call my father.",
+      "category": "People",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:30:22"
+    },
+    {
+      "text": "Please call my caregiver.",
+      "category": "People",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:30:26"
+    },
+    {
+      "text": "Please call my brother.",
+      "category": "People",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:30:34"
+    },
+    {
+      "text": "Please call my caregiver.",
+      "category": "People",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:30:42"
+    },
+    {
+      "text": "Please call my caregiver.",
+      "category": "People",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:30:43"
+    },
+    {
+      "text": "Please call my father.",
+      "category": "People",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:30:44"
+    },
+    {
+      "text": "Please call my father.",
+      "category": "People",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:30:46"
+    },
+    {
+      "text": "Please call my sister.",
+      "category": "People",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:30:50"
+    },
+    {
+      "text": "Please call my caregiver.",
+      "category": "People",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:30:58"
+    },
+    {
+      "text": "Please call my father.",
+      "category": "People",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:31:04"
+    },
+    {
+      "text": "Please call my caregiver.",
+      "category": "People",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:31:05"
     }
   ]
 }

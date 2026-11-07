@@ -46,16 +46,29 @@
   <!-- ===== NAVIGATION BREADCRUMB & CONTROLS ===== -->
   <nav id="breadcrumb">
     <div class="nav-left">
-      <button id="home-btn" class="breadcrumb-item active" onclick="goHome()">🏠 Dashboard Home</button>
+      <button id="home-btn" class="breadcrumb-item active" onclick="goHome()">🏠 Home</button>
+      <button id="btn-persistent-back" class="btn-top-back hidden" onclick="goHome()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" title="Click or rest gaze here to go back">
+        <div class="dwell-progress-bar"></div>
+        ⬅ BACK TO DASHBOARD
+      </button>
       <span id="breadcrumb-separator" class="breadcrumb-sep" style="display:none">›</span>
       <span id="breadcrumb-current" class="breadcrumb-item breadcrumb-active" style="display:none"></span>
     </div>
     <div class="nav-hints">
-      <span class="hint-key">Navigate: <kbd>◀</kbd> <kbd>▲</kbd> <kbd>▼</kbd> <kbd>▶</kbd></span>
-      <span class="hint-key">Select: <kbd>Enter</kbd> / <kbd>Space</kbd></span>
-      <span class="hint-key">Back: <kbd>Esc</kbd> / <kbd>Backspace</kbd></span>
+      <span class="hint-key" style="color:var(--good);font-weight:700;">◀ Look Left to go Back</span>
+      <span class="hint-key">Gesture: Left ➔ Right ➔ Left</span>
+      <span class="hint-key"><kbd>Esc</kbd> / <kbd>Backspace</kbd></span>
     </div>
   </nav>
+
+  <!-- ===== LEFT EDGE LOOK-TO-BACK ZONE ===== -->
+  <div id="left-edge-back" class="left-edge-back hidden" onclick="goHome()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" title="Rest gaze on the left edge of your screen to return to dashboard">
+    <div class="dwell-progress-bar-vertical"></div>
+    <div class="edge-back-content">
+      <span class="edge-icon">◀</span>
+      <span class="edge-text">LOOK LEFT TO GO BACK</span>
+    </div>
+  </div>
 
   <!-- ===== MAIN CONTENT CONTAINER ===== -->
   <main id="content">
