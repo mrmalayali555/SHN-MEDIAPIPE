@@ -1859,6 +1859,292 @@ kbd {
   box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
 }
 
+/* ==========================================================================
+   PRACTICAL ZERO-SCROLL SIGN LANGUAGE ANCHOR WORKSPACE
+   ========================================================================== */
+.isl-practical-workspace {
+  display: flex;
+  gap: 18px;
+  height: calc(100vh - 120px);
+  max-width: 1560px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 6px 16px 16px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Left Column: 6 Body Anchors */
+.isl-anchors-column {
+  width: 32%;
+  min-width: 310px;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  overflow-y: hidden;
+}
+
+.isl-anchors-header {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.isl-anchors-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #c084fc;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.isl-anchors-sub {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.isl-anchors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.isl-anchor-btn {
+  background: #131b2e;
+  border: 2px solid #22304d;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  flex: 1;
+  text-align: left;
+}
+
+.isl-anchor-btn:hover, .isl-anchor-btn.active-dwell, .isl-anchor-btn.gaze-hover {
+  background: #1c2742;
+  border-color: #8b5cf6;
+  transform: translateX(4px);
+  box-shadow: 0 4px 18px rgba(139, 92, 246, 0.3);
+}
+
+.isl-anchor-btn.active {
+  background: linear-gradient(135deg, #1e1b4b 0%, #2e1065 100%);
+  border-color: #c084fc;
+  box-shadow: 0 0 20px rgba(192, 132, 252, 0.35);
+}
+
+.isl-anchor-icon {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.isl-anchor-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.isl-anchor-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.isl-anchor-hint {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.isl-anchor-arrow {
+  color: #8b5cf6;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+/* Right Column: Natural Sign Expressions */
+.isl-expressions-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Top Active Banner */
+.isl-active-bar {
+  background: linear-gradient(135deg, #10172a 0%, #17112c 100%);
+  border: 1.5px solid #3b4266;
+  border-radius: 14px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.isl-active-location-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.isl-gesture-explainer {
+  font-size: 0.82rem;
+  color: #a5b4fc;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.isl-speech-replay-btn {
+  background: #1e293b;
+  border: 1px solid #475569;
+  color: #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.isl-speech-replay-btn:hover, .isl-speech-replay-btn.active-dwell {
+  background: #334155;
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+/* Expression Cards Grid - 2 cols x 3 rows */
+.isl-practical-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 12px;
+  flex: 1;
+  height: 100%;
+}
+
+.isl-express-card {
+  background: #141b2f;
+  border: 2px solid #233150;
+  border-radius: 16px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.isl-express-card:hover, .isl-express-card.active-dwell, .isl-express-card.gaze-hover {
+  background: #1c243f;
+  border-color: #34d399;
+  transform: scale(1.02);
+  box-shadow: 0 8px 25px rgba(52, 211, 153, 0.35);
+}
+
+.isl-express-card.urgent:hover, .isl-express-card.urgent.active-dwell {
+  border-color: #ff5c7a;
+  box-shadow: 0 8px 25px rgba(255, 92, 122, 0.45);
+}
+
+.isl-card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.isl-gesture-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  color: #c084fc;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.isl-action-speak-pill {
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.isl-express-sentence {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.3;
+  letter-spacing: -0.3px;
+  margin: 6px 0;
+}
+
+.isl-card-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 6px;
+}
+
+.isl-meaning-sub {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.isl-dwell-indicator {
+  color: #38bdf8;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+
 
 
 

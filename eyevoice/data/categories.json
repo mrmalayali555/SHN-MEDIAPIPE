@@ -759,6 +759,108 @@
       "category": "Quick Responses",
       "emergency": false,
       "timestamp": "2026-11-07 22:27:30"
+    },
+    {
+      "text": "No.",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:31:45"
+    },
+    {
+      "text": "I cannot move right now.",
+      "category": "Sign Language (ISL)",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:33:19"
+    },
+    {
+      "text": "I cannot move right now.",
+      "category": "Sign Language (ISL)",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:33:20"
+    },
+    {
+      "text": "Please leave me alone for now.",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:38:54"
+    },
+    {
+      "text": "I am feeling happy.",
+      "category": "Emotions",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:38:59"
+    },
+    {
+      "text": "Please adjust my leg position.",
+      "category": "Bed & Position",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:39:54"
+    },
+    {
+      "text": "Please adjust my leg position.",
+      "category": "Bed & Position",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:40:02"
+    },
+    {
+      "text": "I am sorry.",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:40:19"
+    },
+    {
+      "text": "I am feeling very uncomfortable.",
+      "category": "Health & Medical",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:41:19"
+    },
+    {
+      "text": "I am feeling very uncomfortable.",
+      "category": "Health & Medical",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:41:24"
+    },
+    {
+      "text": "I need medical assistance right now.",
+      "category": "Health & Medical",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:41:26"
+    },
+    {
+      "text": "I am in pain. Please help me.",
+      "category": "Health & Medical",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:43:10"
+    },
+    {
+      "text": "Please leave me alone for now.",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:43:17"
+    },
+    {
+      "text": "No.",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:43:19"
+    },
+    {
+      "text": "No.",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:43:25"
+    },
+    {
+      "text": "Please help me.",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:44:40"
+    },
+    {
+      "text": "Please come here.",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-07 22:44:42"
     }
   ]
 }

@@ -23,6 +23,7 @@ let islCurrentCategory = 'all';
 let islSequence = [];
 let islInterpretedResult = null;
 let islLastSpokenText = '';
+let islSelectedAnchor = 'forehead'; // Practical body anchor: forehead, mouth, chest, body, people, questions
 
 // Navigation State (Keyboard / Simulated Eye Gaze Grid)
 let focusedIndex = 0;
@@ -600,298 +601,393 @@ function clearVisualTokens() {
 }
 
 // ============================================================================
-// Indian Sign Language (ISL) to Speech Controller (Major Feature)
+// Indian Sign Language (ISL) to Speech — Practical Visual Body Anchors
+// Zero-scroll layout: Body Location Anchor -> Immediate Natural Sign Expression
 // ============================================================================
-function renderISLView(container) {
-  const filteredSigns = islCurrentCategory === 'all'
-    ? islSignsData
-    : islSignsData.filter(s => s.category === islCurrentCategory);
-
-  const activeCatObj = islCategoriesData.find(c => c.id === islCurrentCategory) || { name: 'All Signs', icon: '🌟' };
-
-  let html = `
-    <div class="isl-container">
-      <!-- HEADER BANNER -->
-      <div class="isl-header-banner">
-        <div class="isl-header-left">
-          <div class="isl-title-row">
-            <h2><span>🤟</span> Sign Language to Speech (ISL)</h2>
-            <span class="isl-tag-pill">RESEARCH-GRADE ISL</span>
-          </div>
-          <p class="isl-subtitle">Express through your eyes. Speak through your language.</p>
-        </div>
-        <div class="isl-header-badges">
-          <div class="isl-legend-chip verified" title="Documented in Indian Sign Language Research and Training Centre Dictionary">
-            <span>✓</span> ISLRTC Verified Lexicon
-          </div>
-          <div class="isl-legend-chip grammar" title="Samar Sinha (2018) Linguistic Grammar Analysis">
-            <span>🧠</span> SOV &amp; Topic-Comment Syntax
-          </div>
-          <button class="btn-back" onclick="goHome()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)">
-            <div class="dwell-progress-bar"></div>
-            ⬅ Back to Dashboard
-          </button>
-        </div>
-      </div>
-
-      <!-- SIGN EXPRESSION BUILDER / COMPOSER CARD -->
-      <div class="isl-composer-card">
-        <div class="isl-composer-header">
-          <div class="isl-composer-title">
-            <span>📝</span> Sign Expression Composer
-            <span style="font-size:0.8rem;color:var(--text-muted);font-weight:400;">(${islSequence.length} signs selected)</span>
-          </div>
-          <div class="isl-composer-meta">
-            ${islInterpretedResult && islInterpretedResult.syntax_type ? '<span class="isl-syntax-badge">Syntax: ' + islInterpretedResult.syntax_type + '</span>' : ''}
-          </div>
-        </div>
-
-        <!-- TOKENS STRIP -->
-        <div class="isl-tokens-strip" id="isl-tokens-strip">
-          ${islSequence.length === 0 ? `
-            <div class="isl-empty-placeholder">
-              <span>👁️</span> Look at any sign card below to select it. (Try: [PRO-1] ➔ [WATER] ➔ [WANT] or [HEAD] ➔ [PAIN] or [DOCTOR] ➔ [COME] ➔ [WHEN])
-            </div>
-          ` : islSequence.map((sign, idx) => `
-            <div class="isl-token-chip" onclick="removeISLSign(${idx})" title="Click or dwell to remove '${sign.gloss}'">
-              <span class="isl-token-icon">${sign.icon}</span>
-              <span class="isl-token-gloss">${sign.gloss}</span>
-              <button class="isl-token-remove" onclick="event.stopPropagation(); removeISLSign(${idx})" title="Remove sign">✕</button>
-            </div>
-            ${idx < islSequence.length - 1 ? '<span class="isl-arrow-sep">➔</span>' : ''}
-          `).join('')}
-        </div>
-
-        <!-- LIVE LINGUISTIC TRANSLATION DISPLAY -->
-        <div class="isl-translation-box">
-          <div class="isl-translation-header">
-            <span class="isl-translation-label">🗣️ Interpreted Natural English Speech:</span>
-            ${islInterpretedResult && islInterpretedResult.confidence ? `
-              <span style="font-size:0.78rem;color:#34d399;font-weight:700;">
-                ✓ Linguistic Confidence: ${Math.round(islInterpretedResult.confidence * 100)}%
-              </span>
-            ` : ''}
-          </div>
-          <div class="isl-spoken-sentence" id="isl-live-sentence">
-            ${islInterpretedResult && islInterpretedResult.sentence ? `
-              <span>"${islInterpretedResult.sentence}"</span>
-            ` : `
-              <span class="isl-sentence-empty">Select signs below to synthesize natural speech...</span>
-            `}
-          </div>
-        </div>
-
-        <!-- COMPOSER ACTION BUTTONS -->
-        <div class="isl-actions-row">
-          <button class="btn-isl-speak" id="btn-isl-speak" 
-                  ${!islInterpretedResult || !islInterpretedResult.sentence ? 'disabled' : ''}
-                  onclick="confirmAndSpeakISL()"
-                  onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)">
-            <div class="dwell-progress-bar"></div>
-            🔊 Confirm &amp; Speak Sentence
-          </button>
-
-          <button class="btn-isl-action" 
-                  ${!islLastSpokenText ? 'disabled style="opacity:0.5;"' : ''}
-                  onclick="replayISL()"
-                  onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)"
-                  title="Replay the last spoken sentence">
-            <div class="dwell-progress-bar"></div>
-            🔁 Replay Speech
-          </button>
-
-          <button class="btn-isl-action" 
-                  ${islSequence.length === 0 ? 'disabled style="opacity:0.5;"' : ''}
-                  onclick="undoISLSign()"
-                  onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)"
-                  title="Remove the most recently selected sign">
-            <div class="dwell-progress-bar"></div>
-            ↩️ Undo Last Sign
-          </button>
-
-          <button class="btn-isl-action danger" 
-                  ${islSequence.length === 0 ? 'disabled style="opacity:0.5;"' : ''}
-                  onclick="clearISLSequence()"
-                  onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)"
-                  title="Clear entire sequence">
-            <div class="dwell-progress-bar"></div>
-            🗑️ Clear Sequence
-          </button>
-
-          <button class="btn-isl-action" 
-                  ${islSequence.length === 0 ? 'disabled style="opacity:0.5;"' : ''}
-                  onclick="openISLReviewModal()"
-                  onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)"
-                  title="Inspect linguistic rules and 5 sign parameters">
-            <div class="dwell-progress-bar"></div>
-            🔍 Review Grammar Analysis
-          </button>
-        </div>
-      </div>
-
-      <!-- CATEGORY FILTER TABS -->
-      <div class="isl-tabs-row">
-        ${islCategoriesData.map(cat => `
-          <button class="isl-tab-btn ${islCurrentCategory === cat.id ? 'active' : ''}" 
-                  onclick="filterISLCategory('${cat.id}')"
-                  onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)">
-            <div class="dwell-progress-bar"></div>
-            <span>${cat.icon}</span>
-            <span>${cat.name}</span>
-            <span class="isl-tab-badge">
-              ${cat.id === 'all' ? islSignsData.length : islSignsData.filter(s => s.category === cat.id).length}
-            </span>
-          </button>
-        `).join('')}
-      </div>
-
-      <!-- SIGN LIBRARY GRID -->
-      <div class="cards-grid isl-signs-grid">
-        <!-- FIRST CARD: BACK TO DASHBOARD FOR INSTANT EASY GAZE ESCAPE -->
-        <div class="card option-card back-card" 
-             data-index="back"
-             onmouseenter="startDwell(this)"
-             onmouseleave="cancelDwell(this)"
-             onclick="goHome()">
-          <div class="dwell-progress-bar"></div>
-          <div class="card-icon">↩️</div>
-          <div class="card-title">BACK TO DASHBOARD</div>
-          <div class="card-desc">Look here or glance left to return</div>
-        </div>
-
-        <!-- SIGNS IN CURRENT CATEGORY -->
-        ${filteredSigns.map((sign, idx) => `
-          <div class="card isl-sign-card"
-               data-sign-id="${sign.id}"
-               data-index="${idx}"
-               onmouseenter="startDwell(this)"
-               onmouseleave="cancelDwell(this)"
-               onclick="addISLSign('${sign.id}')">
-            <div class="dwell-progress-bar"></div>
-            <div class="isl-card-top">
-              <span class="isl-card-icon">${sign.icon || '🤟'}</span>
-              ${sign.is_verified ? '<span class="isl-verified-pill">✓ ISLRTC VERIFIED</span>' : '<span class="isl-verified-pill" style="border-color:#a855f7;color:#c084fc;">ASSISTIVE SYMBOL</span>'}
-            </div>
-            <div class="isl-card-gloss">${sign.gloss}</div>
-            <div class="isl-card-meaning">"${sign.meaning_en}"</div>
-            
-            <!-- 5 SIGN PARAMETERS DISPLAY -->
-            <div class="isl-card-params">
-              <div class="isl-param-row">
-                <span class="isl-param-name">🖐️ Hand:</span>
-                <span class="isl-param-val">${sign.handshape}</span>
-              </div>
-              <div class="isl-param-row">
-                <span class="isl-param-name">📍 Location:</span>
-                <span class="isl-param-val">${sign.location}</span>
-              </div>
-              <div class="isl-param-row">
-                <span class="isl-param-name">🔄 Motion:</span>
-                <span class="isl-param-val">${sign.movement}</span>
-              </div>
-              <div class="isl-param-row">
-                <span class="isl-param-name">😊 Face:</span>
-                <span class="isl-param-val">${sign.non_manual}</span>
-              </div>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `;
-
-  container.innerHTML = html;
-}
-
-async function addISLSign(signId) {
-  const sign = islSignsData.find(s => s.id === signId);
-  if (!sign) return;
-  islSequence.push(sign);
-  showToast(`Added sign: ${sign.gloss}`);
-  await updateISLInterpretation();
-  renderView();
-}
-
-async function removeISLSign(index) {
-  if (index >= 0 && index < islSequence.length) {
-    const removed = islSequence.splice(index, 1)[0];
-    showToast(`Removed: ${removed.gloss}`);
-    await updateISLInterpretation();
-    renderView();
-  }
-}
-
-async function undoISLSign() {
-  if (islSequence.length > 0) {
-    const removed = islSequence.pop();
-    showToast(`Removed: ${removed.gloss}`);
-    await updateISLInterpretation();
-    renderView();
-  }
-}
-
-async function clearISLSequence() {
-  islSequence = [];
-  islInterpretedResult = null;
-  clearMessage();
-  showToast("Cleared sign sequence");
-  renderView();
-}
-
-function filterISLCategory(catId) {
-  islCurrentCategory = catId;
-  renderView();
-}
-
-async function updateISLInterpretation() {
-  if (islSequence.length === 0) {
-    islInterpretedResult = null;
-    clearMessage();
-    return;
-  }
-  try {
-    const res = await fetch('/api/isl/interpret', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ signs: islSequence.map(s => s.id) }),
-    });
-    if (res.ok) {
-      islInterpretedResult = await res.json();
-      setMessage(islInterpretedResult.sentence, '🤟');
-    }
-  } catch (err) {
-    console.error("Interpretation error:", err);
-    // fallback join
-    const fallbackSentence = islSequence.map(s => s.meaning_en).join(' ') + '.';
-    islInterpretedResult = {
-      sentence: fallbackSentence.charAt(0).toUpperCase() + fallbackSentence.slice(1),
-      syntax_type: 'Direct Translation Fallback',
-      confidence: 0.7
-    };
-    setMessage(islInterpretedResult.sentence, '🤟');
-  }
-}
-
-function confirmAndSpeakISL() {
-  if (!islInterpretedResult || !islInterpretedResult.sentence) return;
-  const sentence = islInterpretedResult.sentence;
-  islLastSpokenText = sentence;
-
-  speakText(sentence);
-  postMessageToServer(sentence, "Sign Language (ISL)", Boolean(islInterpretedResult.is_emergency));
-  showToast(`Spoke: "${sentence}"`);
-
-  // Visual feedback pulse
-  const liveEl = document.getElementById('isl-live-sentence');
-  if (liveEl) {
-    liveEl.style.transform = 'scale(1.04)';
-    liveEl.style.color = '#34d399';
-    setTimeout(() => {
-      if (liveEl) {
-        liveEl.style.transform = 'none';
-        liveEl.style.color = '#ffffff';
+const ISL_BODY_ANCHORS = [
+  {
+    id: "forehead",
+    name: "Forehead & Mind",
+    icon: "🧠",
+    hint: "Touch forehead: 'What is your name?', headache, thought",
+    gestureExplainer: "ISL Parameter: Location = Forehead / Temple | Identity, Questions & Cognition",
+    expressions: [
+      {
+        id: "name_inquiry",
+        icon: "🏷️",
+        gesture: "Touch Forehead + Point Forward",
+        sentence: "What is your name?",
+        meaning: "ISL Name Sign (Forehead contact + 2nd person point)",
+        urgent: false
+      },
+      {
+        id: "not_understand",
+        icon: "🤔",
+        gesture: "Touch Temple + Furrowed Brow",
+        sentence: "I don't understand what you mean. Please explain again.",
+        meaning: "ISL Cognitive Negation (Temple touch with furrowed brow)",
+        urgent: false
+      },
+      {
+        id: "understand",
+        icon: "💡",
+        gesture: "Flick Index from Forehead + Nod",
+        sentence: "Yes, I understand you clearly.",
+        meaning: "ISL Comprehension (Index flick from temple)",
+        urgent: false
+      },
+      {
+        id: "headache",
+        icon: "⚡",
+        gesture: "Twist Index Fingers at Temples + Grimace",
+        sentence: "I have a severe headache. Please help me.",
+        meaning: "ISL Head Pain (Opposing index twist at temples)",
+        urgent: true
+      },
+      {
+        id: "dizzy",
+        icon: "💫",
+        gesture: "Claw Hand Circles Forehead",
+        sentence: "I am feeling very dizzy and lightheaded.",
+        meaning: "ISL Dizziness (Claw hand circling in front of eyes)",
+        urgent: true
+      },
+      {
+        id: "think_opinion",
+        icon: "💭",
+        gesture: "Touch Temple + Raised Eyebrows",
+        sentence: "What do you think? What should we do?",
+        meaning: "ISL Opinion Inquiry (Temple contact with interrogative face)",
+        urgent: false
       }
-    }, 400);
+    ]
+  },
+  {
+    id: "mouth",
+    name: "Mouth & Chin",
+    icon: "👄",
+    hint: "Touch chin: 'Water', food, talk, thank you",
+    gestureExplainer: "ISL Parameter: Location = Mouth / Lips / Chin | Sustenance, Speaking & Gratitude",
+    expressions: [
+      {
+        id: "water",
+        icon: "💧",
+        gesture: "W-Hand Taps Chin Twice",
+        sentence: "I need some water to drink, please.",
+        meaning: "ISL Water Sign (Documented ISLRTC Entry #WAT-02)",
+        urgent: false
+      },
+      {
+        id: "food",
+        icon: "🍚",
+        gesture: "Bunched Fingertips Tap Lips Twice",
+        sentence: "I am hungry and would like something to eat.",
+        meaning: "ISL Food Sign (Flat O-hand contacting lips)",
+        urgent: false
+      },
+      {
+        id: "thank_you",
+        icon: "🙏",
+        gesture: "Flat Hand Touches Chin & Moves Forward",
+        sentence: "Thank you very much.",
+        meaning: "ISL Politeness Formula (Chin forward arc with slight bow)",
+        urgent: false
+      },
+      {
+        id: "tell_me",
+        icon: "🗣️",
+        gesture: "Finger Points from Mouth to Interlocutor",
+        sentence: "Please talk to me and tell me what is happening.",
+        meaning: "ISL Directional Tell (Mouth outward arc to 1st person)",
+        urgent: false
+      },
+      {
+        id: "stop_refusal",
+        icon: "🛑",
+        gesture: "Fingers Push Away from Mouth + Headshake",
+        sentence: "Please stop, I don't want that.",
+        meaning: "ISL Refusal (Pushing away from oral space with headshake)",
+        urgent: false
+      },
+      {
+        id: "medicine",
+        icon: "💊",
+        gesture: "Middle Finger Circles Non-Dominant Palm",
+        sentence: "Is it time for my medicine? Please give it to me.",
+        meaning: "ISL Medicine (Mortar and pestle motion in palm)",
+        urgent: false
+      }
+    ]
+  },
+  {
+    id: "chest",
+    name: "Chest & Heart",
+    icon: "🫀",
+    hint: "Touch chest: 'Me', breathing, anxiety, pain",
+    gestureExplainer: "ISL Parameter: Location = Sternum / Heart | Internal States, Respiratory & Affect",
+    expressions: [
+      {
+        id: "breath_emergency",
+        icon: "😰",
+        gesture: "Hands Expanding on Chest + Respiration Strain",
+        sentence: "I cannot breathe comfortably! Please help me immediately!",
+        meaning: "ISL Respiratory Alert (Bilateral chest expansion with strain)",
+        urgent: true
+      },
+      {
+        id: "chest_pain",
+        icon: "⚡",
+        gesture: "Twisting Fingers over Sternum + Pained Face",
+        sentence: "I have severe chest pain. Please call the doctor immediately!",
+        meaning: "ISL Acute Chest Pain (Center chest index twist with grimace)",
+        urgent: true
+      },
+      {
+        id: "anxious",
+        icon: "💓",
+        gesture: "Rapid Fluttering Hands over Heart",
+        sentence: "I am feeling very anxious. Please stay with me.",
+        meaning: "ISL Anxiety / Fear (Trembling open hands at heart)",
+        urgent: true
+      },
+      {
+        id: "self_identity",
+        icon: "👉",
+        gesture: "Index Finger Points to Center Chest",
+        sentence: "I want to talk about how I am feeling.",
+        meaning: "ISL First Person Pronoun PRO-1 (Direct sternum index point)",
+        urgent: false
+      },
+      {
+        id: "sleep_rest",
+        icon: "😴",
+        gesture: "Hands Crossed Over Chest with Head Tilt",
+        sentence: "I am exhausted and I need to sleep and rest now.",
+        meaning: "ISL Rest / Sleep (Bilateral chest cross with relaxed shoulders)",
+        urgent: false
+      },
+      {
+        id: "relieved_happy",
+        icon: "😊",
+        gesture: "Open Palm Brushes Upward on Heart with Smile",
+        sentence: "I am feeling much better now, thank you.",
+        meaning: "ISL Happiness / Relief (Upward heart brush with genuine smile)",
+        urgent: false
+      }
+    ]
+  },
+  {
+    id: "body",
+    name: "Body & Position",
+    icon: "🧍",
+    hint: "Body needs: turn position, washroom, cold, back pain",
+    gestureExplainer: "ISL Parameter: Location = Torso / Back / Somatic | Comfort & Mobility",
+    expressions: [
+      {
+        id: "turn_position",
+        icon: "🔄",
+        gesture: "Both Curved Hands Rotate 180°",
+        sentence: "Please help me turn over and change my position in bed.",
+        meaning: "ISL Reposition Sign (Semicircular hand rotation)",
+        urgent: false
+      },
+      {
+        id: "back_pain",
+        icon: "🧍",
+        gesture: "Thumb Points Backward over Shoulder",
+        sentence: "My back is hurting terribly from lying down.",
+        meaning: "ISL Lumbar Pain (Thumb backward pointing gesture with grimace)",
+        urgent: true
+      },
+      {
+        id: "toilet_urgent",
+        icon: "🚻",
+        gesture: "T-Hand Shakes Side-to-Side",
+        sentence: "I urgently need assistance to use the washroom.",
+        meaning: "ISL Toilet Sign (T-handshake with urgent expression)",
+        urgent: true
+      },
+      {
+        id: "cold_blanket",
+        icon: "🥶",
+        gesture: "Arms Shivering with Hands at Chest",
+        sentence: "I am feeling cold. Please cover me with a blanket.",
+        meaning: "ISL Cold & Blanket (Bilateral shivering S-fists)",
+        urgent: false
+      },
+      {
+        id: "hot_fan",
+        icon: "🥵",
+        gesture: "Fanning Away from Face + Brow Furrow",
+        sentence: "I am feeling hot. Please turn on the ceiling fan.",
+        meaning: "ISL Heat / Fan (Hand throws heat away from face)",
+        urgent: false
+      },
+      {
+        id: "help_me_now",
+        icon: "🤝",
+        gesture: "Fist Lifted Up by Open Non-Dominant Palm",
+        sentence: "Please help me right now.",
+        meaning: "ISL Directional Assistance (2nd person supporting 1st person)",
+        urgent: true
+      }
+    ]
+  },
+  {
+    id: "people",
+    name: "People & Doctor",
+    icon: "👥",
+    hint: "Touch wrist: Doctor pulse, nurse cross, family",
+    gestureExplainer: "ISL Parameter: Location = Wrist / Upper Arm / Social Space | Medical & Care",
+    expressions: [
+      {
+        id: "where_doctor",
+        icon: "👨‍⚕️",
+        gesture: "Two Fingers Tap Radial Pulse at Wrist",
+        sentence: "Where is the doctor? When will they examine me?",
+        meaning: "ISL Doctor Sign (Tapping wrist pulse with attentive gaze)",
+        urgent: false
+      },
+      {
+        id: "call_nurse",
+        icon: "👩‍⚕️",
+        gesture: "Thumb Traces Red Cross on Upper Arm",
+        sentence: "Please call the nurse to check on me.",
+        meaning: "ISL Nurse Sign (Tracing cross on arm / forehead)",
+        urgent: false
+      },
+      {
+        id: "where_family",
+        icon: "👨‍👩‍👧",
+        gesture: "F-Hands Circle Together in Front",
+        sentence: "Where is my family? I want to see them.",
+        meaning: "ISL Family Sign (Bilateral F-hands circular contact)",
+        urgent: false
+      },
+      {
+        id: "thank_caregiver",
+        icon: "🧑‍🤝‍🧑",
+        gesture: "Two Hands Support Wrist with Slight Bow",
+        sentence: "Thank you, caregiver, for looking after me.",
+        meaning: "ISL Caregiver Sign (Supporting wrist motion with respectful nod)",
+        urgent: false
+      },
+      {
+        id: "you_how_are_you",
+        icon: "🫵",
+        gesture: "Index Finger Points Forward + Raised Eyebrows",
+        sentence: "How are you doing today? Is everything okay?",
+        meaning: "ISL Interpersonal Inquiry (Direct pointing with friendly raised brow)",
+        urgent: false
+      },
+      {
+        id: "greetings_hello",
+        icon: "👋",
+        gesture: "Open Hand Wave from Temple",
+        sentence: "Hello! It is so good to see you.",
+        meaning: "ISL Salutation (Temple wave with warm smile)",
+        urgent: false
+      }
+    ]
+  },
+  {
+    id: "questions",
+    name: "Questions & Inquiries",
+    icon: "❓",
+    hint: "Inquire: What?, Where?, When?, How?, Is it okay?",
+    gestureExplainer: "ISL Parameter: Non-Manual Markers = Eyebrow Furrow (Wh) / Eyebrow Raise (Polar)",
+    expressions: [
+      {
+        id: "what_happening",
+        icon: "❓",
+        gesture: "Open Palms Shake + Furrowed Eyebrows",
+        sentence: "What is happening? What is going on?",
+        meaning: "ISL What Sign (Sentence-final interrogative with brow furrow)",
+        urgent: false
+      },
+      {
+        id: "where_place",
+        icon: "📍",
+        gesture: "Index Finger Shakes Side-to-Side + Head Tilt",
+        sentence: "Where are you going? Where is everyone?",
+        meaning: "ISL Where Sign (Upright index oscillation with tilted head)",
+        urgent: false
+      },
+      {
+        id: "when_time",
+        icon: "⏰",
+        gesture: "Index Finger Circles Other Index Tip",
+        sentence: "What time is it now? When is the next checkup?",
+        meaning: "ISL When Sign (Circular index contact with question marker)",
+        urgent: false
+      },
+      {
+        id: "why_reason",
+        icon: "🤔",
+        gesture: "Hand Brushes Forehead into Y-Hand",
+        sentence: "Why is this happening? Can you explain why?",
+        meaning: "ISL Why Sign (Forehead pull away into Y-hand)",
+        urgent: false
+      },
+      {
+        id: "is_okay_polar",
+        icon: "❔",
+        gesture: "Body Leans Forward + Eyebrows Raised High",
+        sentence: "Is everything going to be okay?",
+        meaning: "ISL Polar Question Marker (High eyebrow raise + forward torso freeze)",
+        urgent: false
+      },
+      {
+        id: "difficult_struggle",
+        icon: "😓",
+        gesture: "Bent Knuckles Strike Together with Strained Face",
+        sentence: "This is very difficult for me right now.",
+        meaning: "ISL Difficult Sign (Knuckles impact with tight jaw)",
+        urgent: true
+      }
+    ]
+  }
+];
+
+function selectISLAnchor(anchorId) {
+  islSelectedAnchor = anchorId;
+  const anchor = ISL_BODY_ANCHORS.find(a => a.id === anchorId);
+  if (anchor) {
+    showToast(`Switched Anchor: ${anchor.name}`);
+  }
+  renderView();
+}
+
+function triggerISLExpression(exprId) {
+  const currentAnchor = ISL_BODY_ANCHORS.find(a => a.id === islSelectedAnchor) || ISL_BODY_ANCHORS[0];
+  const expr = currentAnchor.expressions.find(e => e.id === exprId);
+  if (!expr) return;
+
+  islLastSpokenText = expr.sentence;
+
+  // Speak aloud immediately
+  speakText(expr.sentence);
+
+  // Send to Caregiver message board
+  postMessageToServer(expr.sentence, `Sign Language (ISL - ${currentAnchor.name})`, Boolean(expr.urgent));
+
+  // Update topbar message
+  setMessage(expr.sentence, expr.icon);
+
+  // Show toast
+  showToast(`🗣️ Spoke: "${expr.sentence}"`);
+
+  // Visual card feedback
+  const card = document.querySelector(`[data-expr-id="${exprId}"]`);
+  if (card) {
+    card.style.borderColor = '#34d399';
+    card.style.transform = 'scale(1.04)';
+    setTimeout(() => {
+      if (card) {
+        card.style.borderColor = '';
+        card.style.transform = '';
+      }
+    }, 450);
   }
 }
 
@@ -899,85 +995,113 @@ function replayISL() {
   if (islLastSpokenText) {
     speakText(islLastSpokenText);
     showToast(`Replaying: "${islLastSpokenText}"`);
+  } else {
+    showToast("Look at any expression card to speak.");
   }
 }
 
-function openISLReviewModal() {
-  if (!islInterpretedResult || islSequence.length === 0) {
-    showToast("Select signs first to review grammar.");
-    return;
-  }
+function renderISLView(container) {
+  const currentAnchor = ISL_BODY_ANCHORS.find(a => a.id === islSelectedAnchor) || ISL_BODY_ANCHORS[0];
 
+  let html = `
+    <div class="isl-practical-workspace">
+      <!-- LEFT COLUMN: 6 BODY LOCATION ANCHORS (ZERO SCROLLING) -->
+      <div class="isl-anchors-column">
+        <div class="isl-anchors-header">
+          <div class="isl-anchors-title">
+            <span>🤟</span> Body Sign Anchors
+          </div>
+          <span class="isl-anchors-sub">Look to switch</span>
+        </div>
+
+        <div class="isl-anchors-list">
+          ${ISL_BODY_ANCHORS.map(anchor => `
+            <div class="isl-anchor-btn ${islSelectedAnchor === anchor.id ? 'active' : ''}"
+                 onmouseenter="startDwell(this)"
+                 onmouseleave="cancelDwell(this)"
+                 onclick="selectISLAnchor('${anchor.id}')"
+                 title="${anchor.hint}">
+              <div class="dwell-progress-bar"></div>
+              <div class="isl-anchor-icon">${anchor.icon}</div>
+              <div class="isl-anchor-info">
+                <div class="isl-anchor-name">
+                  ${anchor.name}
+                  ${islSelectedAnchor === anchor.id ? '<span style="color:#34d399;font-size:0.75rem;">● ACTIVE</span>' : ''}
+                </div>
+                <div class="isl-anchor-hint">${anchor.hint}</div>
+              </div>
+              <div class="isl-anchor-arrow">${islSelectedAnchor === anchor.id ? '▶' : '›'}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: IMMEDIATE NATURAL SIGN EXPRESSIONS (ZERO SCROLLING) -->
+      <div class="isl-expressions-column">
+        <!-- TOP ACTIVE BANNER -->
+        <div class="isl-active-bar">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="isl-active-location-badge">
+              <span>${currentAnchor.icon}</span> ${currentAnchor.name}
+            </div>
+            <span class="isl-gesture-explainer">${currentAnchor.gestureExplainer}</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button class="isl-speech-replay-btn" onclick="replayISL()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" title="Replay the last spoken sentence">
+              <div class="dwell-progress-bar"></div>
+              🔁 Replay
+            </button>
+            <button class="btn-back" onclick="goHome()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" style="margin:0;padding:8px 16px;font-size:0.88rem;">
+              <div class="dwell-progress-bar"></div>
+              ⬅ Back Home
+            </button>
+          </div>
+        </div>
+
+        <!-- 6 LARGE EXPRESSION CARDS (2x3 GRID - 100% IN VIEWPORT) -->
+        <div class="cards-grid isl-practical-grid">
+          ${currentAnchor.expressions.map((expr, idx) => `
+            <div class="card isl-express-card ${expr.urgent ? 'urgent' : ''}"
+                 data-expr-id="${expr.id}"
+                 data-index="${idx}"
+                 onmouseenter="startDwell(this)"
+                 onmouseleave="cancelDwell(this)"
+                 onclick="triggerISLExpression('${expr.id}')">
+              <div class="dwell-progress-bar"></div>
+              
+              <div class="isl-card-header-row">
+                <div class="isl-gesture-pill">
+                  <span>🖐️</span>
+                  <span>${expr.gesture}</span>
+                </div>
+                <div class="isl-action-speak-pill">
+                  <span>🔊 SPEAKS ON GLANCE</span>
+                </div>
+              </div>
+
+              <div class="isl-express-sentence">
+                "${expr.sentence}"
+              </div>
+
+              <div class="isl-card-footer-row">
+                <span class="isl-meaning-sub">${expr.meaning}</span>
+                <span class="isl-dwell-indicator">⏱️ 0.8s dwell</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+function openISLReviewModal() {
+  const currentAnchor = ISL_BODY_ANCHORS.find(a => a.id === islSelectedAnchor) || ISL_BODY_ANCHORS[0];
   const modal = document.getElementById('isl-review-modal');
   if (!modal) return;
-
-  // 1. Glosses
-  const glossesStrip = document.getElementById('isl-review-glosses');
-  if (glossesStrip) {
-    glossesStrip.innerHTML = islSequence.map(s => `
-      <span class="isl-token-chip">
-        <span>${s.icon}</span>
-        <strong>${s.gloss}</strong>
-      </span>
-    `).join(' <span style="color:#6366f1;font-weight:800;align-self:center;">➔</span> ');
-  }
-
-  // 2. Table of 5 parameters
-  const paramsTable = document.getElementById('isl-review-params-table');
-  if (paramsTable) {
-    paramsTable.innerHTML = `
-      <table class="isl-review-table">
-        <thead>
-          <tr>
-            <th>Sign</th>
-            <th>Meaning</th>
-            <th>🖐️ Handshape</th>
-            <th>📍 Location</th>
-            <th>🔄 Movement</th>
-            <th>😊 Non-Manual</th>
-            <th>Source</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${islSequence.map(s => `
-            <tr>
-              <td><strong>${s.icon} ${s.gloss}</strong></td>
-              <td>${s.meaning_en}</td>
-              <td>${s.handshape}</td>
-              <td>${s.location}</td>
-              <td>${s.movement}</td>
-              <td>${s.non_manual}</td>
-              <td style="color:#34d399;font-size:0.75rem;">${s.source}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-  }
-
-  // 3. Syntactic Derivation
-  const syntaxTypeEl = document.getElementById('isl-review-syntax-type');
-  if (syntaxTypeEl) syntaxTypeEl.textContent = islInterpretedResult.syntax_type || 'ISL SOV / Topic-Comment';
-
-  const nonmanualEl = document.getElementById('isl-review-nonmanual');
-  if (nonmanualEl) {
-    const nms = islSequence.map(s => s.non_manual).filter(Boolean);
-    nonmanualEl.textContent = nms.length ? nms.join('; ') : 'Neutral';
-  }
-
-  const rulesEl = document.getElementById('isl-review-rules');
-  if (rulesEl) {
-    rulesEl.textContent = islInterpretedResult.is_question 
-      ? 'ISL Sentence-final wh-interrogative with eyebrow furrow & head tilt'
-      : (islInterpretedResult.is_negated
-          ? 'Post-verbal negative particle with headshake non-manual'
-          : 'Topic-Comment ordering transformed into natural English SVO syntax');
-  }
-
-  // 4. Final Spoken Sentence
-  const finalSentenceEl = document.getElementById('isl-review-final-sentence');
-  if (finalSentenceEl) finalSentenceEl.textContent = islInterpretedResult.sentence;
-
   modal.classList.remove('hidden');
 }
 
@@ -987,7 +1111,7 @@ function closeISLReviewModal() {
 }
 
 function confirmAndSpeakISLFromModal() {
-  confirmAndSpeakISL();
+  if (islLastSpokenText) speakText(islLastSpokenText);
   closeISLReviewModal();
 }
 
@@ -1095,7 +1219,7 @@ async function postMessageToServer(text, category, isEmergency = false) {
 // Keyboard & Gaze Grid Navigation Engine (Part 12)
 // ============================================================================
 function updateFocusableGrid() {
-  focusableElements = Array.from(document.querySelectorAll('.cards-grid .card'));
+  focusableElements = Array.from(document.querySelectorAll('.cards-grid .card, .isl-anchor-btn'));
   if (focusableElements.length > 0) {
     if (focusedIndex >= focusableElements.length) focusedIndex = 0;
     highlightFocused();
