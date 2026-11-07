@@ -1,4 +1,5 @@
 flask>=3.0
+gunicorn>=21.0
 numpy>=1.26
 opencv-python>=4.9; sys_platform == 'win32'
 mediapipe>=0.10; sys_platform == 'win32'

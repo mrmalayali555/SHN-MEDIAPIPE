@@ -1,4 +1,5 @@
-"""Root entrypoint for Vercel and production WSGI servers."""
+"""Root entrypoint for Render, Railway, Vercel, and production WSGI servers."""
+import os
 import sys
 from pathlib import Path
 
@@ -9,5 +10,5 @@ if str(ROOT) not in sys.path:
 from eyevoice.server import app
 
 if __name__ == "__main__":
-    app.run()
-
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
