@@ -7,23 +7,48 @@ and message history.  Runs alongside (not inside) the teammate's Tkinter
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template, request, send_from_directory
+from flask import Flask, Response, jsonify, render_template, request, send_from_directory
 
 ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = ROOT.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 DATA_FILE = ROOT / "data" / "categories.json"
+
+from eyetype.calibration import Calibration
+from eyetype.gaze import GazeTracker, auto_center
 
 app = Flask(
     __name__,
     template_folder=str(ROOT / "templates"),
     static_folder=str(ROOT / "static"),
 )
+
+# ------------------------------------------------------------- eye tracker ---
+_tracker: GazeTracker | None = None
+_tracker_lock = threading.Lock()
+_calibration: Calibration = Calibration.load()
+_centre_samples: list[tuple[float, float]] = []
+_auto_centre: tuple[float, float] = (0.0, 0.0)
+
+
+def get_tracker() -> GazeTracker:
+    global _tracker
+    with _tracker_lock:
+        if _tracker is None:
+            _tracker = GazeTracker(camera=0)
+            _tracker.start()
+        return _tracker
 
 
 # ----------------------------------------------------------------- helpers ---
@@ -161,6 +186,65 @@ def speak_endpoint():
     import threading
     threading.Thread(target=_worker, daemon=True).start()
     return jsonify({"status": "speaking", "text": text})
+
+
+# ---- real-time MediaPipe eye gaze stream ----
+@app.route("/api/gaze-stream")
+def gaze_stream():
+    """Server-Sent Events streaming live eye coordinates, blinks, and camera PIP."""
+    tracker = get_tracker()
+
+    def generate():
+        global _auto_centre, _centre_samples
+        last_t = 0.0
+        while True:
+            sample = tracker.latest()
+            if sample is not None and sample.t != last_t:
+                last_t = sample.t
+                preview_b64 = None
+                if sample.preview:
+                    preview_b64 = "data:image/png;base64," + base64.b64encode(sample.preview).decode("ascii")
+
+                nx, ny = 0.5, 0.5
+                if sample.found:
+                    if len(_centre_samples) < 30:
+                        _centre_samples.append((sample.u, sample.v))
+                        if len(_centre_samples) >= 30:
+                            _auto_centre = auto_center(_centre_samples)
+
+                    if _calibration.is_calibrated:
+                        nx, ny = _calibration.map_gaze(sample.u, sample.v)
+                    else:
+                        nx, ny = _calibration.map_gaze(sample.u, sample.v, auto_centre=_auto_centre)
+
+                payload = {
+                    "found": bool(sample.found),
+                    "x": float(nx),
+                    "y": float(ny),
+                    "blink": bool(sample.blink),
+                    "ear": float(sample.ear),
+                    "fps": round(sample.fps, 1),
+                    "camera_open": tracker.active_camera is not None,
+                    "error": tracker.error,
+                    "preview": preview_b64,
+                }
+                yield f"data: {json.dumps(payload)}\n\n"
+            time.sleep(0.03)
+
+    return Response(generate(), mimetype="text/event-stream")
+
+
+@app.route("/api/recenter-gaze", methods=["POST"])
+def recenter_gaze():
+    """Recenter gaze so looking straight at the screen maps to (0.5, 0.5)."""
+    global _auto_centre, _centre_samples
+    tracker = get_tracker()
+    sample = tracker.latest()
+    if sample and sample.found:
+        _auto_centre = (sample.u, sample.v)
+        _centre_samples = [(sample.u, sample.v)]
+        return jsonify({"status": "recentered", "centre": _auto_centre})
+    return jsonify({"error": "no face found"}), 400
 
 
 # ---- launch teammate's eye-tracking keyboard ----

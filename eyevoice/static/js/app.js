@@ -77,12 +77,152 @@ function cancelDwell(cardEl) {
 }
 
 // ============================================================================
+// MediaPipe Real-Time Eye Gaze & Blink Stream (Hackathon Core)
+// ============================================================================
+let gazeSource = 'webcam'; // 'webcam' or 'mouse'
+let gazeStreamEventSource = null;
+let lastGazeCard = null;
+let hudVisible = true;
+
+function initGazeStream() {
+  if (gazeStreamEventSource) gazeStreamEventSource.close();
+
+  gazeStreamEventSource = new EventSource('/api/gaze-stream');
+
+  gazeStreamEventSource.onmessage = function(event) {
+    if (gazeSource !== 'webcam') return;
+    try {
+      const data = JSON.parse(event.data);
+      handleGazeData(data);
+    } catch (e) {
+      console.error("Gaze stream parse error:", e);
+    }
+  };
+
+  gazeStreamEventSource.onerror = function() {
+    const status = document.getElementById('hud-status');
+    if (status) status.textContent = '● Connecting Camera...';
+  };
+}
+
+function handleGazeData(data) {
+  // Update Live Camera HUD
+  const previewImg = document.getElementById('hud-preview-img');
+  const fpsEl = document.getElementById('hud-fps');
+  const statusEl = document.getElementById('hud-status');
+  const blinkChip = document.getElementById('hud-blink-indicator');
+  const reticle = document.getElementById('gaze-reticle');
+
+  if (data.preview && previewImg) {
+    previewImg.src = data.preview;
+    previewImg.style.display = 'block';
+  }
+  if (fpsEl) fpsEl.textContent = `${data.fps || 0} FPS`;
+  if (statusEl) {
+    statusEl.textContent = data.found ? '● Face & Eyes Tracked' : '● Looking for face...';
+    statusEl.style.color = data.found ? 'var(--good)' : 'var(--warn)';
+  }
+
+  // Handle Voluntary Blink
+  if (data.blink && blinkChip) {
+    blinkChip.classList.add('active');
+    blinkChip.textContent = 'BLINK!';
+    if (reticle) reticle.classList.add('blinking');
+    setTimeout(() => {
+      blinkChip.classList.remove('active');
+      blinkChip.textContent = 'Blink: Ready';
+      if (reticle) reticle.classList.remove('blinking');
+    }, 280);
+  }
+
+  if (!data.found || !reticle) {
+    return;
+  }
+
+  // Map normalized (0..1) gaze coordinates to window dimensions
+  const px = data.x * window.innerWidth;
+  const py = data.y * window.innerHeight;
+
+  reticle.style.left = px + 'px';
+  reticle.style.top = py + 'px';
+
+  // Find card directly under the eye gaze point
+  const el = document.elementFromPoint(px, py);
+  const card = el ? el.closest('.card') : null;
+
+  if (card) {
+    if (card !== lastGazeCard) {
+      if (lastGazeCard) {
+        lastGazeCard.classList.remove('focused');
+        cancelDwell(lastGazeCard);
+      }
+      lastGazeCard = card;
+      card.classList.add('focused');
+      startDwell(card);
+    }
+
+    // Voluntary Blink-to-Click Confirmation!
+    if (data.blink) {
+      cancelDwell(card);
+      card.click();
+      showToast("Blink Confirmed!");
+    }
+  } else {
+    if (lastGazeCard) {
+      lastGazeCard.classList.remove('focused');
+      cancelDwell(lastGazeCard);
+      lastGazeCard = null;
+    }
+  }
+}
+
+async function recenterGaze() {
+  try {
+    const res = await fetch('/api/recenter-gaze', { method: 'POST' });
+    if (res.ok) {
+      showToast("🎯 Gaze position centered to screen!");
+    } else {
+      showToast("Look straight at screen to center");
+    }
+  } catch (err) {
+    console.error("Recenter error:", err);
+  }
+}
+
+function toggleGazeSource() {
+  gazeSource = (gazeSource === 'webcam') ? 'mouse' : 'webcam';
+  const btn = document.getElementById('gaze-mode-btn');
+  const reticle = document.getElementById('gaze-reticle');
+  
+  if (btn) {
+    if (gazeSource === 'webcam') {
+      btn.textContent = '👁️ Gaze: WEBCAM LIVE';
+      btn.classList.add('active-gaze');
+      showToast("Switched to MediaPipe Webcam Eye Tracking");
+    } else {
+      btn.textContent = '🖱️ Gaze: MOUSE DEMO';
+      btn.classList.remove('active-gaze');
+      showToast("Switched to Mouse-Simulated Gaze");
+    }
+  }
+}
+
+function toggleHudVisibility() {
+  const body = document.getElementById('hud-body');
+  hudVisible = !hudVisible;
+  if (body) {
+    body.style.display = hudVisible ? 'flex' : 'none';
+  }
+}
+
+// ============================================================================
 // Initialization
 // ============================================================================
 document.addEventListener('DOMContentLoaded', () => {
   loadData();
   setupKeyboardNavigation();
   initSpeech();
+  initGazeStream();
   
   // Speak button
   document.getElementById('speak-btn').addEventListener('click', () => {

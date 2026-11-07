@@ -11,8 +11,11 @@
   <header id="topbar">
     <div class="topbar-left">
       <span class="brand">👁️ EyeVoice</span>
+      <button class="badge-mode active-gaze" id="gaze-mode-btn" onclick="toggleGazeSource()" title="Switch between MediaPipe Webcam Eye Tracking and Mouse Demo">
+        👁️ Gaze: WEBCAM LIVE
+      </button>
       <button class="badge-mode" id="dwell-toggle-btn" onclick="toggleDwellMode()" title="Toggle Auto-Click when resting gaze on a card">
-        ⏱️ Eye Dwell Click: ON (0.8s)
+        ⏱️ Dwell Click: ON (0.8s)
       </button>
     </div>
     <div class="topbar-center" id="message-bar">
@@ -232,6 +235,27 @@
           <button class="btn-secondary" onclick="closeKeyboardModal()">Back to Dashboard</button>
         </div>
         <div id="keyboard-status" class="kb-status-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FLOATING EYE GAZE RETICLE ===== -->
+  <div id="gaze-reticle" class="gaze-reticle"></div>
+
+  <!-- ===== LIVE MEDIAPIPE CAMERA HUD (PIP) ===== -->
+  <div id="camera-hud" class="camera-hud">
+    <div class="hud-header">
+      <span class="hud-indicator" id="hud-status">● Live MediaPipe</span>
+      <div class="hud-actions">
+        <button class="btn-hud-recenter" onclick="recenterGaze()" title="Align center with where you are looking right now">🎯 Recenter</button>
+        <button class="btn-hud-toggle" onclick="toggleHudVisibility()" title="Minimize / Show Camera">_</button>
+      </div>
+    </div>
+    <div id="hud-body">
+      <img id="hud-preview-img" alt="MediaPipe Face & Eye Mesh" src="/static/placeholder_cam.png" onerror="this.style.display='none'">
+      <div class="hud-footer">
+        <span id="hud-fps">-- FPS</span>
+        <span id="hud-blink-indicator" class="hud-blink-chip">Blink: Ready</span>
       </div>
     </div>
   </div>
