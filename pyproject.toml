@@ -1,3 +1,2 @@
 [tool.vercel]
-entrypoint = "eyevoice.server:app"
-
+entrypoint = "app.py"

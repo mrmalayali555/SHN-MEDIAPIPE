@@ -14,34 +14,52 @@ import subprocess
 import sys
 import threading
 import time
+import traceback
 from pathlib import Path
+from typing import Any
 
 from flask import Flask, Response, jsonify, render_template, request, send_from_directory
+from werkzeug.exceptions import HTTPException
 
 ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = ROOT.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 DATA_FILE = ROOT / "data" / "categories.json"
 ISL_DATA_FILE = ROOT / "data" / "isl_signs.json"
 
-try:
-    from eyetype.calibration import Calibration
-    from eyetype.gaze import GazeTracker, auto_center
-    _calibration = Calibration.load()
-except Exception as _import_exc:
-    print(f"Serverless/cloud fallback (webcam tracker offline): {_import_exc}")
+# In serverless/cloud environments (e.g. Vercel), local webcam drivers are not present
+IS_VERCEL = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+
+if IS_VERCEL:
     Calibration = None
     GazeTracker = None
     auto_center = None
     _calibration = None
+else:
+    try:
+        from eyetype.calibration import Calibration
+        from eyetype.gaze import GazeTracker, auto_center
+        _calibration = Calibration.load()
+    except Exception as _import_exc:
+        print(f"Local webcam tracker fallback: {_import_exc}")
+        Calibration = None
+        GazeTracker = None
+        auto_center = None
+        _calibration = None
 
 app = Flask(
     __name__,
     template_folder=str(ROOT / "templates"),
     static_folder=str(ROOT / "static"),
 )
+
+# In-memory caches to guarantee 100% uptime on read-only serverless filesystems
+_memory_data: dict | None = None
+_memory_isl_data: dict | None = None
 
 # ------------------------------------------------------------- eye tracker ---
 _tracker: Any = None
@@ -66,31 +84,108 @@ def get_tracker() -> Any:
 
 
 # ----------------------------------------------------------------- helpers ---
+def _find_file(rel_path: str) -> Path | None:
+    for base in [ROOT, PROJECT_ROOT / "eyevoice", PROJECT_ROOT, Path(".")]:
+        p = base / rel_path
+        if p.exists():
+            return p
+    return None
+
+
 def _load_data() -> dict:
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+    global _memory_data
+    if _memory_data is not None:
+        return _memory_data
+    p = _find_file("data/categories.json")
+    if p and p.exists():
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                _memory_data = json.load(f)
+                return _memory_data
+        except Exception as e:
+            print(f"Error loading categories: {e}")
+    # Minimal fallback structure
+    return {
+        "categories": [
+            {
+                "id": "quick",
+                "name": "Quick Needs",
+                "icon": "⚡",
+                "options": [
+                    {"id": "yes", "label": "YES", "message": "Yes, definitely.", "icon": "✅"},
+                    {"id": "no", "label": "NO", "message": "No, thank you.", "icon": "❌"},
+                    {"id": "water", "label": "WATER", "message": "I need water please.", "icon": "💧"},
+                    {"id": "help", "label": "HELP", "message": "I need assistance right now.", "icon": "🆘", "emergency": True}
+                ]
+            }
+        ],
+        "message_history": []
+    }
 
 
 def _save_data(data: dict) -> None:
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+    global _memory_data
+    _memory_data = data
+    p = _find_file("data/categories.json")
+    if p:
+        try:
+            with open(p, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+        except OSError:
+            # Read-only filesystem on cloud/Vercel serverless functions
+            pass
 
 
 def _load_isl_data() -> dict:
-    if ISL_DATA_FILE.exists():
-        with open(ISL_DATA_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+    global _memory_isl_data
+    if _memory_isl_data is not None:
+        return _memory_isl_data
+    p = _find_file("data/isl_signs.json")
+    if p and p.exists():
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                _memory_isl_data = json.load(f)
+                return _memory_isl_data
+        except Exception as e:
+            print(f"Error loading ISL signs: {e}")
     return {"meta": {}, "categories": [], "signs": []}
+
+
+# ------------------------------------------------------------- error handler ---
+@app.errorhandler(500)
+@app.errorhandler(Exception)
+def handle_server_error(e):
+    if isinstance(e, HTTPException):
+        return e
+    tb = traceback.format_exc()
+    print(f"Unhandled Exception: {tb}")
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head><title>EyeVoice Server Error</title></head>
+    <body style="background:#0f172a; color:#f8fafc; font-family:sans-serif; padding:40px; line-height:1.6;">
+        <h2 style="color:#ef4444;">👁️ EyeVoice — Application Diagnostic</h2>
+        <p>An unexpected exception occurred:</p>
+        <pre style="background:#1e293b; padding:20px; border-radius:8px; color:#fca5a5; overflow:auto; font-size:14px;">{tb}</pre>
+    </body>
+    </html>
+    """, 500
 
 
 # ------------------------------------------------------------------ routes ---
 @app.route("/")
 def index():
+    p = _find_file("templates/index.html")
+    if p and p.exists():
+        return p.read_text(encoding="utf-8"), 200, {"Content-Type": "text/html; charset=utf-8"}
     return render_template("index.html")
 
 
 @app.route("/caregiver")
 def caregiver():
+    p = _find_file("templates/caregiver.html")
+    if p and p.exists():
+        return p.read_text(encoding="utf-8"), 200, {"Content-Type": "text/html; charset=utf-8"}
     return render_template("caregiver.html")
 
 
