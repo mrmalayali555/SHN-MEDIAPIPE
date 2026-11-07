@@ -188,6 +188,16 @@ def speak_endpoint():
     return jsonify({"status": "speaking", "text": text})
 
 
+def _map_gaze_enhanced(u: float, v: float, cu: float, cv: float) -> tuple[float, float]:
+    """Accurate, calibrated mapping with non-linear edge reach to prevent eye strain."""
+    du = (u - cu) * 3.4
+    dv = (v - cv) * 4.0
+    # Gentle non-linear expansion towards edges so cards are reached effortlessly
+    nx = 0.5 + du * (1.0 + 0.25 * abs(du))
+    ny = 0.5 + dv * (1.0 + 0.25 * abs(dv))
+    return float(max(0.02, min(0.98, nx))), float(max(0.02, min(0.98, ny)))
+
+
 # ---- real-time MediaPipe eye gaze stream ----
 @app.route("/api/gaze-stream")
 def gaze_stream():
@@ -215,7 +225,8 @@ def gaze_stream():
                     if _calibration.is_calibrated:
                         nx, ny = _calibration.map_gaze(sample.u, sample.v)
                     else:
-                        nx, ny = _calibration.map_gaze(sample.u, sample.v, auto_centre=_auto_centre)
+                        cu, cv = _auto_centre
+                        nx, ny = _map_gaze_enhanced(sample.u, sample.v, cu, cv)
 
                 payload = {
                     "found": bool(sample.found),

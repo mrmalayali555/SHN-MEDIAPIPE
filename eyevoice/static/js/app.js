@@ -84,6 +84,17 @@ let gazeStreamEventSource = null;
 let lastGazeCard = null;
 let hudVisible = true;
 
+// Adaptive Gaze Stabilization Filter
+let smoothX = window.innerWidth / 2;
+let smoothY = window.innerHeight / 2;
+const DEADBAND_PX = 12; // ignores micro-jitter under 12px
+const HYSTERESIS_MARGIN = 38; // sticky magnetic card lock
+
+// Eye Gesture State (Left -> Right -> Left = BACK)
+let gestureSequence = [];
+let lastGlanceTime = 0;
+let gestureCooldownUntil = 0;
+
 function initGazeStream() {
   if (gazeStreamEventSource) gazeStreamEventSource.close();
 
@@ -103,6 +114,42 @@ function initGazeStream() {
     const status = document.getElementById('hud-status');
     if (status) status.textContent = '● Connecting Camera...';
   };
+}
+
+function checkEyeGestureBack(normX) {
+  const now = performance.now();
+  if (now < gestureCooldownUntil) return;
+
+  // Invalidate sequence if inactive for over 1.6s
+  if (now - lastGlanceTime > 1600) {
+    gestureSequence = [];
+  }
+
+  let glance = null;
+  if (normX < 0.25) glance = 'L'; // Looked left
+  else if (normX > 0.75) glance = 'R'; // Looked right
+
+  if (glance) {
+    const last = gestureSequence[gestureSequence.length - 1];
+    if (glance !== last) {
+      gestureSequence.push(glance);
+      lastGlanceTime = now;
+      
+      const pattern = gestureSequence.slice(-3).join('');
+      if (pattern === 'LRL') {
+        gestureSequence = [];
+        gestureCooldownUntil = now + 1600;
+        triggerBackGesture();
+      }
+    }
+  }
+}
+
+function triggerBackGesture() {
+  showToast("↩ Eye Gesture: Left ➔ Right ➔ Left = BACK TO DASHBOARD");
+  speakText("Going back");
+  closeAllModals();
+  goHome();
 }
 
 function handleGazeData(data) {
@@ -139,16 +186,47 @@ function handleGazeData(data) {
     return;
   }
 
-  // Map normalized (0..1) gaze coordinates to window dimensions
-  const px = data.x * window.innerWidth;
-  const py = data.y * window.innerHeight;
+  // 1. Check Eye Gesture for BACK: Look Left -> Look Right -> Look Left
+  checkEyeGestureBack(data.x);
 
-  reticle.style.left = px + 'px';
-  reticle.style.top = py + 'px';
+  // 2. High-Accuracy Adaptive Smoothing Filter
+  const targetX = data.x * window.innerWidth;
+  const targetY = data.y * window.innerHeight;
 
-  // Find card directly under the eye gaze point
-  const el = document.elementFromPoint(px, py);
-  const card = el ? el.closest('.card') : null;
+  const dx = targetX - smoothX;
+  const dy = targetY - smoothY;
+  const dist = Math.hypot(dx, dy);
+
+  // If movement is micro-jitter, keep smoothX, smoothY steady
+  if (dist > DEADBAND_PX) {
+    const alpha = Math.min(0.42, Math.max(0.14, dist / 320));
+    smoothX += dx * alpha;
+    smoothY += dy * alpha;
+  }
+
+  reticle.style.left = smoothX + 'px';
+  reticle.style.top = smoothY + 'px';
+
+  // 3. Magnetic Card Snapping (Sticky Focus prevents jitter while dwelling)
+  let card = null;
+
+  if (lastGazeCard && lastGazeCard.isConnected) {
+    const rect = lastGazeCard.getBoundingClientRect();
+    const inStickyZone = (
+      smoothX >= rect.left - HYSTERESIS_MARGIN &&
+      smoothX <= rect.right + HYSTERESIS_MARGIN &&
+      smoothY >= rect.top - HYSTERESIS_MARGIN &&
+      smoothY <= rect.bottom + HYSTERESIS_MARGIN
+    );
+    if (inStickyZone) {
+      card = lastGazeCard;
+    }
+  }
+
+  if (!card) {
+    const el = document.elementFromPoint(smoothX, smoothY);
+    card = el ? el.closest('.card') : null;
+  }
 
   if (card) {
     if (card !== lastGazeCard) {
@@ -330,6 +408,16 @@ function renderCategoryView(container) {
 
   html += `
     <div class="cards-grid">
+      <div class="card option-card back-card" 
+           data-index="back"
+           onmouseenter="startDwell(this)"
+           onmouseleave="cancelDwell(this)"
+           onclick="goHome()">
+        <div class="dwell-progress-bar"></div>
+        <div class="card-icon">↩️</div>
+        <div class="card-title">BACK TO DASHBOARD</div>
+        <div class="card-desc">Look here or glance: Left ➔ Right ➔ Left</div>
+      </div>
       ${cat.options.map((opt, idx) => `
         <div class="card option-card" 
              data-index="${idx}"

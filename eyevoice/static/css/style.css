@@ -413,6 +413,17 @@ kbd {
   border-color: var(--accent);
 }
 
+.card.back-card {
+  border: 2px solid var(--accent);
+  background: linear-gradient(135deg, #16263d, #0b1424);
+  box-shadow: 0 4px 16px rgba(76, 201, 240, 0.25);
+}
+
+.card.back-card:hover, .card.back-card.focused {
+  border-color: var(--good);
+  box-shadow: 0 0 24px rgba(61, 220, 151, 0.4);
+}
+
 /* Option-specific card styles */
 .option-card {
   min-height: 140px;
