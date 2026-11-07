@@ -94,6 +94,17 @@
       ]
     },
     {
+      "id": "isl_sign_language",
+      "name": "👁️ Sign Language to Speech",
+      "subtitle": "Express through your eyes. Speak through your language.",
+      "icon": "🤟",
+      "color": "#8b5cf6",
+      "description": "Express through your eyes. Speak through your language.",
+      "is_isl": true,
+      "badge": "CORE FEATURE",
+      "options": []
+    },
+    {
       "id": "people",
       "name": "People",
       "icon": "👥",
