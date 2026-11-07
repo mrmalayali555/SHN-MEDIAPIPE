@@ -40,6 +40,7 @@ def main() -> int:
     t0 = time.time()
     frames = face_frames = previews = 0
     last = None
+    last_preview: bytes | None = None
     while time.time() - t0 < args.seconds:
         sample = tracker.latest()
         if sample is not None and sample is not last:
@@ -49,6 +50,7 @@ def main() -> int:
                 face_frames += 1
             if sample.preview:
                 previews += 1
+                last_preview = sample.preview
         time.sleep(0.02)
 
     alive = tracker.is_alive()
@@ -65,8 +67,8 @@ def main() -> int:
     print(f"tracker thread     : {'alive' if alive else 'STOPPED'}")
     print(f"error              : {tracker.error or 'none'}")
 
-    if args.save and last and last.preview:
-        img = cv2.imdecode(np.frombuffer(last.preview, np.uint8), cv2.IMREAD_COLOR)
+    if args.save and last_preview:
+        img = cv2.imdecode(np.frombuffer(last_preview, np.uint8), cv2.IMREAD_COLOR)
         if img is not None:
             cv2.imwrite(str(args.save), img)
             print(f"preview saved to   : {args.save}")
