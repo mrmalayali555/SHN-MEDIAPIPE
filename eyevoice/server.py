@@ -24,6 +24,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 DATA_FILE = ROOT / "data" / "categories.json"
+ISL_DATA_FILE = ROOT / "data" / "isl_signs.json"
 
 from eyetype.calibration import Calibration
 from eyetype.gaze import GazeTracker, auto_center
@@ -60,6 +61,13 @@ def _load_data() -> dict:
 def _save_data(data: dict) -> None:
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
+
+
+def _load_isl_data() -> dict:
+    if ISL_DATA_FILE.exists():
+        with open(ISL_DATA_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"meta": {}, "categories": [], "signs": []}
 
 
 # ------------------------------------------------------------------ routes ---
@@ -133,6 +141,39 @@ def delete_option(cat_id: str, opt_id: str):
             _save_data(data)
             return jsonify({"status": "deleted"})
     return jsonify({"error": "not found"}), 404
+
+
+# ---- Indian Sign Language (ISL) API ----
+@app.route("/api/isl/signs", methods=["GET"])
+def get_isl_signs():
+    """Retrieve verified Indian Sign Language signs with parameter metadata."""
+    category = request.args.get("category")
+    data = _load_isl_data()
+    signs = data.get("signs", [])
+    if category and category != "all":
+        signs = [s for s in signs if s.get("category") == category]
+    return jsonify({
+        "meta": data.get("meta", {}),
+        "total": len(signs),
+        "signs": signs,
+    })
+
+
+@app.route("/api/isl/categories", methods=["GET"])
+def get_isl_categories():
+    """Retrieve available categories for ISL sign filtering."""
+    data = _load_isl_data()
+    return jsonify(data.get("categories", []))
+
+
+@app.route("/api/isl/interpret", methods=["POST"])
+def interpret_isl_sequence():
+    """Interpret a sequence of ISL signs into fluent English using grammar rules."""
+    from eyevoice.isl_grammar import interpret_sign_sequence
+    payload = request.get_json(force=True) or {}
+    signs = payload.get("signs", [])
+    result = interpret_sign_sequence(signs)
+    return jsonify(result)
 
 
 # ---- message history ----
