@@ -92,11 +92,12 @@ function cancelDwell(cardEl) {
 
 // ============================================================================
 // MediaPipe Real-Time Eye Gaze & Blink Stream (Hackathon Core)
+// Default to website-friendly interactive mode (zero camera permission prompts)
 // ============================================================================
-let gazeSource = 'webcam'; // 'webcam' or 'mouse'
+let gazeSource = 'mouse'; // 'mouse' (interactive web demo) or 'webcam' (local Python tracker)
 let gazeStreamEventSource = null;
 let lastGazeCard = null;
-let hudVisible = true;
+let hudVisible = false;
 
 // Adaptive Gaze Stabilization Filter
 let smoothX = window.innerWidth / 2;
@@ -306,20 +307,30 @@ async function recenterGaze() {
 }
 
 function toggleGazeSource() {
-  gazeSource = (gazeSource === 'webcam') ? 'mouse' : 'webcam';
+  gazeSource = (gazeSource === 'mouse') ? 'webcam' : 'mouse';
   const btn = document.getElementById('gaze-mode-btn');
+  const hud = document.getElementById('camera-hud');
   const reticle = document.getElementById('gaze-reticle');
   
-  if (btn) {
-    if (gazeSource === 'webcam') {
+  if (gazeSource === 'webcam') {
+    if (btn) {
       btn.textContent = '👁️ Gaze: WEBCAM LIVE';
       btn.classList.add('active-gaze');
-      showToast("Switched to MediaPipe Webcam Eye Tracking");
-    } else {
-      btn.textContent = '🖱️ Gaze: MOUSE DEMO';
-      btn.classList.remove('active-gaze');
-      showToast("Switched to Mouse-Simulated Gaze");
     }
+    if (hud) hud.style.display = 'block';
+    initGazeStream();
+    showToast("Connecting to Local MediaPipe Webcam Tracker...");
+  } else {
+    if (gazeStreamEventSource) {
+      gazeStreamEventSource.close();
+      gazeStreamEventSource = null;
+    }
+    if (btn) {
+      btn.textContent = '🖱️ Gaze: INTERACTIVE (DWELL)';
+      btn.classList.remove('active-gaze');
+    }
+    if (hud) hud.style.display = 'none';
+    showToast("Switched to Website-Friendly Interactive Mode");
   }
 }
 
@@ -331,6 +342,27 @@ function toggleHudVisibility() {
   }
 }
 
+// Global mouse/pointer tracking for smooth website-friendly eye-cursor simulation
+window.addEventListener('mousemove', (e) => {
+  if (gazeSource !== 'mouse') return;
+  const reticle = document.getElementById('gaze-reticle');
+  if (reticle) {
+    reticle.style.left = e.clientX + 'px';
+    reticle.style.top = e.clientY + 'px';
+    reticle.style.display = 'block';
+  }
+});
+
+window.addEventListener('touchmove', (e) => {
+  if (gazeSource !== 'mouse' || !e.touches || !e.touches[0]) return;
+  const reticle = document.getElementById('gaze-reticle');
+  if (reticle) {
+    reticle.style.left = e.touches[0].clientX + 'px';
+    reticle.style.top = e.touches[0].clientY + 'px';
+    reticle.style.display = 'block';
+  }
+}, { passive: true });
+
 // ============================================================================
 // Initialization
 // ============================================================================
@@ -338,7 +370,10 @@ document.addEventListener('DOMContentLoaded', () => {
   loadData();
   setupKeyboardNavigation();
   initSpeech();
-  initGazeStream();
+  
+  if (gazeSource === 'webcam') {
+    initGazeStream();
+  }
   
   // Speak button
   document.getElementById('speak-btn').addEventListener('click', () => {

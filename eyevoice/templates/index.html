@@ -16,8 +16,8 @@
         <div class="dwell-progress-bar"></div>
         ⬅ BACK / HOME
       </button>
-      <button class="badge-mode active-gaze" id="gaze-mode-btn" onclick="toggleGazeSource()" title="Switch between MediaPipe Webcam Eye Tracking and Mouse Demo">
-        👁️ Gaze: WEBCAM LIVE
+      <button class="badge-mode" id="gaze-mode-btn" onclick="toggleGazeSource()" title="Switch between Web Interactive Gaze and Local Webcam Tracker">
+        🖱️ Gaze: INTERACTIVE (DWELL)
       </button>
       <button class="badge-mode" id="dwell-toggle-btn" onclick="toggleDwellMode()" title="Toggle Auto-Click when resting gaze on a card">
         ⏱️ Dwell Click: ON (0.8s)
@@ -326,8 +326,8 @@
   <!-- ===== FLOATING EYE GAZE RETICLE ===== -->
   <div id="gaze-reticle" class="gaze-reticle"></div>
 
-  <!-- ===== LIVE MEDIAPIPE CAMERA HUD (PIP) ===== -->
-  <div id="camera-hud" class="camera-hud">
+  <!-- ===== LIVE MEDIAPIPE CAMERA HUD (PIP - Hidden by default for website friendliness) ===== -->
+  <div id="camera-hud" class="camera-hud" style="display: none;">
     <div class="hud-header">
       <span class="hud-indicator" id="hud-status">● Live MediaPipe</span>
       <div class="hud-actions">
