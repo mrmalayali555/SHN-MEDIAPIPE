@@ -11,6 +11,11 @@
   <header id="topbar">
     <div class="topbar-left">
       <span class="brand">👁️ EyeVoice</span>
+      <!-- PERMANENT BACK BUTTON: ALWAYS VISIBLE EVERYWHERE AT ALL TIMES -->
+      <button id="perm-back-btn" class="btn-perm-back" onclick="goHome()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" title="Permanent Back / Return to Home Dashboard">
+        <div class="dwell-progress-bar"></div>
+        ⬅ BACK / HOME
+      </button>
       <button class="badge-mode active-gaze" id="gaze-mode-btn" onclick="toggleGazeSource()" title="Switch between MediaPipe Webcam Eye Tracking and Mouse Demo">
         👁️ Gaze: WEBCAM LIVE
       </button>
@@ -61,12 +66,12 @@
     </div>
   </nav>
 
-  <!-- ===== LEFT EDGE LOOK-TO-BACK ZONE ===== -->
-  <div id="left-edge-back" class="left-edge-back hidden" onclick="goHome()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" title="Rest gaze on the left edge of your screen to return to dashboard">
+  <!-- ===== PERMANENT LEFT EDGE LOOK-TO-BACK ZONE ===== -->
+  <div id="left-edge-back" class="left-edge-back" onclick="goHome()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" title="Permanent: Rest gaze on left edge of screen anytime to return home">
     <div class="dwell-progress-bar-vertical"></div>
     <div class="edge-back-content">
       <span class="edge-icon">◀</span>
-      <span class="edge-text">LOOK LEFT TO GO BACK</span>
+      <span class="edge-text">LOOK LEFT = BACK HOME</span>
     </div>
   </div>
 

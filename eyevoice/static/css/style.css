@@ -1122,8 +1122,34 @@ kbd {
 }
 
 /* ==========================================================================
-   Accessible Back Navigation Elements
+   Accessible Permanent Back Navigation Elements
    ========================================================================== */
+.btn-perm-back {
+  background: linear-gradient(135deg, #103348, #0a1f2e);
+  color: var(--accent);
+  border: 2px solid var(--accent);
+  padding: 8px 18px;
+  border-radius: var(--radius-md);
+  font-size: 0.98rem;
+  font-weight: 800;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 0 14px rgba(76, 201, 240, 0.4);
+  letter-spacing: 0.5px;
+  transition: all 0.15s ease;
+}
+
+.btn-perm-back:hover, .btn-perm-back.focused {
+  background: var(--accent);
+  color: #061923;
+  transform: scale(1.05);
+  box-shadow: 0 0 24px rgba(76, 201, 240, 0.7);
+}
+
 .btn-top-back {
   background: linear-gradient(135deg, #103348, #0a1f2e);
   color: var(--accent);

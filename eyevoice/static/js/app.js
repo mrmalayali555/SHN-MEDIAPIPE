@@ -376,7 +376,6 @@ function renderView() {
     breadcrumbCurrent.style.display = 'none';
     breadcrumbSep.style.display = 'none';
     if (persistentBack) persistentBack.classList.add('hidden');
-    if (edgeBack) edgeBack.classList.add('hidden');
     renderHomeView(content);
   } else {
     homeBtn.classList.remove('active');
@@ -384,7 +383,6 @@ function renderView() {
     breadcrumbSep.style.display = 'inline-block';
     breadcrumbCurrent.textContent = currentCategory.name;
     if (persistentBack) persistentBack.classList.remove('hidden');
-    if (edgeBack) edgeBack.classList.remove('hidden');
     renderCategoryView(content);
   }
 
@@ -555,21 +553,25 @@ function goHome() {
   cancelDwell();
   lastGazeCard = null;
   lookLeftStartTime = 0;
+  closeAllModals();
+
+  if (currentView === 'home') {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast("Dashboard Home");
+    return;
+  }
+
   currentView = 'home';
   currentCategory = null;
   focusedIndex = 0;
 
-  const edgeBack = document.getElementById('left-edge-back');
-  if (edgeBack) {
-    edgeBack.classList.add('hidden');
-    edgeBack.classList.remove('active-dwell');
-  }
   const edgeBar = document.querySelector('.dwell-progress-bar-vertical');
   if (edgeBar) edgeBar.style.height = '0%';
-  const persistentBack = document.getElementById('btn-persistent-back');
-  if (persistentBack) persistentBack.classList.add('hidden');
+  const edgeBack = document.getElementById('left-edge-back');
+  if (edgeBack) edgeBack.classList.remove('active-dwell');
 
   renderView();
+  showToast("↩ Returned to Dashboard Home");
 }
 
 function setMessage(text, icon = '💬') {
