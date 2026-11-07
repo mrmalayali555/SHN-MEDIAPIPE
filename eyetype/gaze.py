@@ -86,6 +86,12 @@ class GazeFrame:
     found: bool = False
     u: float = 0.0                 # gaze vector, eye-width units
     v: float = 0.0
+    # head pose: yaw/pitch as a fraction of inter-eye distance, scale =
+    # inter-eye distance (head size/distance).  Used by calibration to
+    # separate "eyes moved" from "head moved".
+    yaw: float = 0.0
+    pitch: float = 0.0
+    scale: float = 0.0
     blink: bool = False            # quick-blink event on this frame
     ear: float = 0.0               # eye aspect ratio (openness)
     fps: float = 0.0
@@ -123,6 +129,9 @@ class GazeTracker(threading.Thread):
 
         self._fx = _OneEuro()
         self._fy = _OneEuro()
+        self._fyaw = _OneEuro(min_cutoff=0.8)
+        self._fpitch = _OneEuro(min_cutoff=0.8)
+        self._fscale = _OneEuro(min_cutoff=0.8)
 
     # ------------------------------------------------------------ public --
     def latest(self) -> GazeFrame | None:
@@ -222,16 +231,23 @@ class GazeTracker(threading.Thread):
         pts = results.face_landmarks[0] if results.face_landmarks else None
         if pts is not None:
             u, v = self._gaze_vector(pts)
+            yaw, pitch, scale = self._head_pose(pts)
             t = time.time()
             sample.found = True
             sample.u = self._fx(u, t)
             sample.v = self._fy(v, t)
+            sample.yaw = self._fyaw(yaw, t)
+            sample.pitch = self._fpitch(pitch, t)
+            sample.scale = self._fscale(scale, t)
             sample.ear = self._ear(pts)
             sample.blink = self._update_blink(sample.ear, t)
             self._frame_i += 1
         else:
             self._fx.reset()
             self._fy.reset()
+            self._fyaw.reset()
+            self._fpitch.reset()
+            self._fscale.reset()
             self._closed_frames = 0
             self._armed = False
 
@@ -275,6 +291,26 @@ class GazeTracker(threading.Thread):
         if weight_sum == 0:
             return 0.0, 0.0
         return acc_u / weight_sum, acc_v / weight_sum
+
+    @classmethod
+    def _head_pose(cls, pts) -> tuple[float, float, float]:
+        """Coarse head pose from landmarks.
+
+        yaw/pitch = nose-tip offset from the eye midpoint, in units of the
+        inter-eye distance (so it is scale- and distance-independent);
+        scale = the inter-eye distance itself (grows as the head comes
+        closer to the camera).
+        """
+        left = cls._pt(pts, 33)      # outer corner, left eye
+        right = cls._pt(pts, 263)    # outer corner, right eye
+        nose = cls._pt(pts, 1)       # nose tip
+        d = float(np.linalg.norm(right - left))
+        if d < 1e-6:
+            return 0.0, 0.0, 0.0
+        mid = (left + right) / 2.0
+        return (float((nose[0] - mid[0]) / d),
+                float((nose[1] - mid[1]) / d),
+                d)
 
     @classmethod
     def _ear(cls, pts) -> float:

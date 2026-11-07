@@ -23,7 +23,8 @@ import tkinter as tk
 from dataclasses import dataclass
 
 from . import theme
-from .calibration import Calibration, CalibrationSession
+from .calibration import (SETTLE_SECONDS, STABILITY_RADIUS, STABILITY_TIMEOUT,
+                          STABILITY_WINDOW, Calibration, CalibrationSession)
 from .gaze import GazeFrame, GazeTracker, auto_center
 from .keyboard import Key, KeyboardView
 from .language import LanguageModel
@@ -34,6 +35,7 @@ DWELL_STEP = 0.05
 REPEAT_SECONDS = 0.28          # dwell time for hold-to-repeat keys (space, backspace)
 RETRIGGER_DISTANCE = 45        # px the gaze may wander before dwell restarts
 COOLDOWN_SECONDS = 0.15        # brief pause after a selection
+CURSOR_SMOOTHING = 0.35        # EMA factor for the mapped gaze cursor
 
 
 @dataclass
@@ -145,8 +147,13 @@ class EyeTypeApp:
         self.hovered: tuple[str, object] | None = None
         self.auto_centre: tuple[float, float] = (0.0, 0.0)
         self.centre_samples: list[tuple[float, float]] = []
+        self._cursor: tuple[float, float] | None = None   # smoothed gaze cursor
         self.mouse_pos: tuple[float, float] | None = None
         self._last_fed = 0.0            # timestamp of last calibration sample
+        self._cal_buffer: list[tuple[float, float]] = []   # recent gaze samples
+        self._cal_point_seen = -1       # calibration dot index we last saw
+        self._cal_point_at = 0.0        # when the current dot appeared
+        self._cal_settle_at = 0.0       # ignore gaze samples before this time
         self._last_preview: bytes | None = None
         self._last_preview_at = 0.0
         self._photo = None
@@ -361,6 +368,12 @@ class EyeTypeApp:
         if self.cal_session.collecting:
             return
         self.cal_session.start()
+        # reset the settle/stability gate for the new session
+        self._cal_buffer.clear()
+        self._cal_point_seen = -1
+        self._cal_point_at = 0.0
+        self._cal_settle_at = 0.0
+        self._last_fed = 0.0
         self.overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
         # NB: Canvas overrides Tk's `raise` subcommand, so widget.lift() with no
         # args raises TclError here - call the window command directly instead.
@@ -429,9 +442,13 @@ class EyeTypeApp:
     def _finish_calibration(self) -> None:
         self.overlay.place_forget()
         if self.calibration.is_calibrated:
-            self.toast("Calibration saved \u2713", color=theme.GOOD)
+            quality = self.calibration.quality
+            message = "Calibration saved \u2713"
+            if quality is not None:
+                message += f" \u00b7 avg error {quality * 100:.0f}% of screen"
+            self.toast(message, color=theme.GOOD)
         elif self.calibration.samples:
-            self.toast("Calibration failed - keep your face clearly visible",
+            self.toast("Calibration too rough - keep your head still and press C",
                        color=theme.DANGER)
         else:
             self.toast("No face detected - try again", color=theme.DANGER)
@@ -536,12 +553,22 @@ class EyeTypeApp:
 
         if self.cal_session.collecting:
             self._cal_face_ok = bool(sample and sample.found)
-            # feed once per *new* camera frame: polling at 60 Hz would count
-            # the same gaze sample several times and let stale samples from
-            # the previous point dominate the fit
+            # a new dot appeared: drop everything gathered for the old one
+            if self.cal_session.index != self._cal_point_seen:
+                self._cal_point_seen = self.cal_session.index
+                self._cal_buffer.clear()
+                self._cal_point_at = now
+                self._cal_settle_at = now + SETTLE_SECONDS
+            # feed once per *new* camera frame, and only once the gaze has
+            # arrived at the dot: polling at 60 Hz would count the same gaze
+            # sample several times, and travel samples point at the *previous*
+            # dot (they triple the fit residual)
             if sample and sample.found and sample.t != self._last_fed:
                 self._last_fed = sample.t
-                self.cal_session.feed(sample.u, sample.v)
+                self._cal_buffer.append((sample.u, sample.v))
+                del self._cal_buffer[:-STABILITY_WINDOW]
+                if self._gaze_settled(now):
+                    self.cal_session.feed(sample.u, sample.v)
             self._draw_calibration_overlay()
             if self.cal_session.done:
                 self._finish_calibration()
@@ -550,6 +577,35 @@ class EyeTypeApp:
 
         self._maybe_update_preview(sample, now)
         self.root.after(16, self.tick)
+
+    def _gaze_settled(self, now: float) -> bool:
+        """True when the gaze has stopped travelling towards the current dot."""
+        if now < self._cal_settle_at:
+            return False
+        buf = self._cal_buffer
+        if len(buf) < 3:
+            return False
+        xs = [p[0] for p in buf]
+        ys = [p[1] for p in buf]
+        if max(max(xs) - min(xs), max(ys) - min(ys)) <= STABILITY_RADIUS:
+            return True
+        # never stall: if the gaze refuses to settle, count it anyway
+        return now - self._cal_point_at > STABILITY_TIMEOUT
+
+    def _smooth_cursor(self, gx: float, gy: float) -> tuple[float, float]:
+        """EMA the mapped gaze so dwell is not restarted by eye jitter.
+
+        Raw mapped positions jump by a few percent of the window between
+        frames; without this the dwell ring resets before it can fill
+        (RETRIGGER_DISTANCE is only 45 px).
+        """
+        if self._cursor is None:
+            self._cursor = (gx, gy)
+            return self._cursor
+        cx, cy = self._cursor
+        a = CURSOR_SMOOTHING
+        self._cursor = (cx + a * (gx - cx), cy + a * (gy - cy))
+        return self._cursor
 
     def _interaction_tick(self, sample: GazeFrame | None, now: float) -> None:
         gx = gy = None
@@ -574,12 +630,14 @@ class EyeTypeApp:
             gy = ny * self.root.winfo_height()
 
         if not found or gx is None:
+            self._cursor = None
             self._set_hover(None)
             self._reset_dwell()
             self._clear_progress()
             self.keyboard.draw_cursor(0, 0, visible=False)
             return
 
+        gx, gy = self._smooth_cursor(gx, gy)
         point = (gx, gy)
         target = self._target_at(gx, gy)
         self._set_hover(target)
