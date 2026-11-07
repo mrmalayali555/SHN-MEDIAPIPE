@@ -261,6 +261,68 @@
     </div>
   </div>
 
+  <!-- ===== ISL LINGUISTIC GRAMMAR REVIEW MODAL ===== -->
+  <div id="isl-review-modal" class="overlay hidden">
+    <div class="overlay-content isl-review-content">
+      <div class="modal-header">
+        <h2>🤟 Indian Sign Language (ISL) Linguistic Analysis</h2>
+        <button class="btn-close" onclick="closeISLReviewModal()">✕</button>
+      </div>
+      <div class="isl-review-body">
+        <p class="isl-review-desc">
+          Linguistic transformation based on <em>ISLRTC Standard Lexicon</em> &amp; Samar Sinha (2018) <em>ISL Grammar</em>.
+        </p>
+
+        <div class="isl-review-section">
+          <div class="isl-review-label">1. Selected Sign Sequence (ISL Glosses):</div>
+          <div id="isl-review-glosses" class="isl-review-glosses-strip"></div>
+        </div>
+
+        <div class="isl-review-section">
+          <div class="isl-review-label">2. Sign Parameter Breakdown (ISL 5 Parameters):</div>
+          <div id="isl-review-params-table" class="isl-review-table-container"></div>
+        </div>
+
+        <div class="isl-review-section">
+          <div class="isl-review-label">3. Syntactic Derivation &amp; Grammar Rules:</div>
+          <div class="isl-derivation-box">
+            <div class="derivation-item">
+              <span class="derivation-title">ISL Sentence Structure:</span>
+              <strong id="isl-review-syntax-type" class="derivation-val">SOV (Subject-Object-Verb) / Topic-Comment</strong>
+            </div>
+            <div class="derivation-item">
+              <span class="derivation-title">Non-Manual Grammatical Signals:</span>
+              <span id="isl-review-nonmanual" class="derivation-val">Neutral posture</span>
+            </div>
+            <div class="derivation-item">
+              <span class="derivation-title">Syntactic Rules Applied:</span>
+              <span id="isl-review-rules" class="derivation-val">Topic-Comment topicalization; directional verb agreement</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="isl-review-section">
+          <div class="isl-review-label">4. Spoken English Output:</div>
+          <div class="isl-sentence-display">
+            <span class="isl-speaker-icon">🔊</span>
+            <span id="isl-review-final-sentence" class="isl-final-text">Sentence will appear here</span>
+          </div>
+        </div>
+
+        <div class="isl-review-actions">
+          <button class="btn-isl-speak-lg" onclick="confirmAndSpeakISLFromModal()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)">
+            <div class="dwell-progress-bar"></div>
+            🔊 Confirm &amp; Speak Aloud
+          </button>
+          <button class="btn-secondary" onclick="closeISLReviewModal()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)">
+            <div class="dwell-progress-bar"></div>
+            ⬅ Return to Composer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== FLOATING EYE GAZE RETICLE ===== -->
   <div id="gaze-reticle" class="gaze-reticle"></div>
 

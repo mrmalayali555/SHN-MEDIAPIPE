@@ -16,6 +16,14 @@ let currentMessage = '';
 let currentIcon = '💬';
 let visualTokens = []; // for Visual Language composition
 
+// Indian Sign Language (ISL) Linguistic State
+let islSignsData = [];
+let islCategoriesData = [];
+let islCurrentCategory = 'all';
+let islSequence = [];
+let islInterpretedResult = null;
+let islLastSpokenText = '';
+
 // Navigation State (Keyboard / Simulated Eye Gaze Grid)
 let focusedIndex = 0;
 let focusableElements = [];
@@ -343,9 +351,30 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================================================
 // Data Loading & API
 // ============================================================================
+async function loadISLData() {
+  try {
+    const [signsRes, catsRes] = await Promise.all([
+      fetch('/api/isl/signs'),
+      fetch('/api/isl/categories')
+    ]);
+    if (signsRes.ok) {
+      const data = await signsRes.json();
+      islSignsData = data.signs || [];
+    }
+    if (catsRes.ok) {
+      islCategoriesData = await catsRes.json();
+    }
+  } catch (err) {
+    console.error("Failed to load ISL sign lexicon:", err);
+  }
+}
+
 async function loadData() {
   try {
-    const res = await fetch('/api/categories');
+    const [res] = await Promise.all([
+      fetch('/api/categories'),
+      loadISLData()
+    ]);
     if (!res.ok) throw new Error('Failed to load categories');
     appData = await res.json();
     renderView();
@@ -377,6 +406,13 @@ function renderView() {
     breadcrumbSep.style.display = 'none';
     if (persistentBack) persistentBack.classList.add('hidden');
     renderHomeView(content);
+  } else if (currentView === 'isl_sign_language' || (currentCategory && currentCategory.id === 'isl_sign_language')) {
+    homeBtn.classList.remove('active');
+    breadcrumbCurrent.style.display = 'inline-block';
+    breadcrumbSep.style.display = 'inline-block';
+    breadcrumbCurrent.textContent = '🤟 Sign Language to Speech (ISL)';
+    if (persistentBack) persistentBack.classList.remove('hidden');
+    renderISLView(content);
   } else {
     homeBtn.classList.remove('active');
     breadcrumbCurrent.style.display = 'inline-block';
@@ -394,13 +430,14 @@ function renderHomeView(container) {
   const html = `
     <div class="cards-grid">
       ${appData.categories.map((cat, idx) => `
-        <div class="card ${cat.is_external ? 'keyboard-card' : ''}" 
+        <div class="card ${cat.is_external ? 'keyboard-card' : ''} ${cat.is_isl ? 'isl-feature-card' : ''}" 
              data-index="${idx}"
              onmouseenter="startDwell(this)"
              onmouseleave="cancelDwell(this)"
              onclick="selectCategory('${cat.id}')">
           <div class="dwell-progress-bar"></div>
           ${cat.is_external ? '<span class="card-badge">TEAMMATE FEATURE</span>' : ''}
+          ${cat.is_isl ? '<span class="card-badge isl-badge">⭐ MAJOR NEW FEATURE</span>' : ''}
           <div class="card-icon">${cat.icon}</div>
           <div class="card-title">${cat.name}</div>
           <div class="card-desc">${cat.description || ''}</div>
@@ -478,6 +515,19 @@ function selectCategory(catId) {
     openKeyboardModal();
     return;
   }
+  if (catId === 'isl_sign_language') {
+    const cat = appData.categories.find(c => c.id === catId) || {
+      id: 'isl_sign_language',
+      name: '👁️ Sign Language to Speech',
+      icon: '🤟'
+    };
+    currentCategory = cat;
+    currentView = 'isl_sign_language';
+    focusedIndex = 0;
+    renderView();
+    showToast("Opened Sign Language to Speech");
+    return;
+  }
   const cat = appData.categories.find(c => c.id === catId);
   if (!cat) return;
   currentCategory = cat;
@@ -547,6 +597,398 @@ function clearVisualTokens() {
   visualTokens = [];
   clearMessage();
   renderView();
+}
+
+// ============================================================================
+// Indian Sign Language (ISL) to Speech Controller (Major Feature)
+// ============================================================================
+function renderISLView(container) {
+  const filteredSigns = islCurrentCategory === 'all'
+    ? islSignsData
+    : islSignsData.filter(s => s.category === islCurrentCategory);
+
+  const activeCatObj = islCategoriesData.find(c => c.id === islCurrentCategory) || { name: 'All Signs', icon: '🌟' };
+
+  let html = `
+    <div class="isl-container">
+      <!-- HEADER BANNER -->
+      <div class="isl-header-banner">
+        <div class="isl-header-left">
+          <div class="isl-title-row">
+            <h2><span>🤟</span> Sign Language to Speech (ISL)</h2>
+            <span class="isl-tag-pill">RESEARCH-GRADE ISL</span>
+          </div>
+          <p class="isl-subtitle">Express through your eyes. Speak through your language.</p>
+        </div>
+        <div class="isl-header-badges">
+          <div class="isl-legend-chip verified" title="Documented in Indian Sign Language Research and Training Centre Dictionary">
+            <span>✓</span> ISLRTC Verified Lexicon
+          </div>
+          <div class="isl-legend-chip grammar" title="Samar Sinha (2018) Linguistic Grammar Analysis">
+            <span>🧠</span> SOV &amp; Topic-Comment Syntax
+          </div>
+          <button class="btn-back" onclick="goHome()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)">
+            <div class="dwell-progress-bar"></div>
+            ⬅ Back to Dashboard
+          </button>
+        </div>
+      </div>
+
+      <!-- SIGN EXPRESSION BUILDER / COMPOSER CARD -->
+      <div class="isl-composer-card">
+        <div class="isl-composer-header">
+          <div class="isl-composer-title">
+            <span>📝</span> Sign Expression Composer
+            <span style="font-size:0.8rem;color:var(--text-muted);font-weight:400;">(${islSequence.length} signs selected)</span>
+          </div>
+          <div class="isl-composer-meta">
+            ${islInterpretedResult && islInterpretedResult.syntax_type ? '<span class="isl-syntax-badge">Syntax: ' + islInterpretedResult.syntax_type + '</span>' : ''}
+          </div>
+        </div>
+
+        <!-- TOKENS STRIP -->
+        <div class="isl-tokens-strip" id="isl-tokens-strip">
+          ${islSequence.length === 0 ? `
+            <div class="isl-empty-placeholder">
+              <span>👁️</span> Look at any sign card below to select it. (Try: [PRO-1] ➔ [WATER] ➔ [WANT] or [HEAD] ➔ [PAIN] or [DOCTOR] ➔ [COME] ➔ [WHEN])
+            </div>
+          ` : islSequence.map((sign, idx) => `
+            <div class="isl-token-chip" onclick="removeISLSign(${idx})" title="Click or dwell to remove '${sign.gloss}'">
+              <span class="isl-token-icon">${sign.icon}</span>
+              <span class="isl-token-gloss">${sign.gloss}</span>
+              <button class="isl-token-remove" onclick="event.stopPropagation(); removeISLSign(${idx})" title="Remove sign">✕</button>
+            </div>
+            ${idx < islSequence.length - 1 ? '<span class="isl-arrow-sep">➔</span>' : ''}
+          `).join('')}
+        </div>
+
+        <!-- LIVE LINGUISTIC TRANSLATION DISPLAY -->
+        <div class="isl-translation-box">
+          <div class="isl-translation-header">
+            <span class="isl-translation-label">🗣️ Interpreted Natural English Speech:</span>
+            ${islInterpretedResult && islInterpretedResult.confidence ? `
+              <span style="font-size:0.78rem;color:#34d399;font-weight:700;">
+                ✓ Linguistic Confidence: ${Math.round(islInterpretedResult.confidence * 100)}%
+              </span>
+            ` : ''}
+          </div>
+          <div class="isl-spoken-sentence" id="isl-live-sentence">
+            ${islInterpretedResult && islInterpretedResult.sentence ? `
+              <span>"${islInterpretedResult.sentence}"</span>
+            ` : `
+              <span class="isl-sentence-empty">Select signs below to synthesize natural speech...</span>
+            `}
+          </div>
+        </div>
+
+        <!-- COMPOSER ACTION BUTTONS -->
+        <div class="isl-actions-row">
+          <button class="btn-isl-speak" id="btn-isl-speak" 
+                  ${!islInterpretedResult || !islInterpretedResult.sentence ? 'disabled' : ''}
+                  onclick="confirmAndSpeakISL()"
+                  onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)">
+            <div class="dwell-progress-bar"></div>
+            🔊 Confirm &amp; Speak Sentence
+          </button>
+
+          <button class="btn-isl-action" 
+                  ${!islLastSpokenText ? 'disabled style="opacity:0.5;"' : ''}
+                  onclick="replayISL()"
+                  onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)"
+                  title="Replay the last spoken sentence">
+            <div class="dwell-progress-bar"></div>
+            🔁 Replay Speech
+          </button>
+
+          <button class="btn-isl-action" 
+                  ${islSequence.length === 0 ? 'disabled style="opacity:0.5;"' : ''}
+                  onclick="undoISLSign()"
+                  onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)"
+                  title="Remove the most recently selected sign">
+            <div class="dwell-progress-bar"></div>
+            ↩️ Undo Last Sign
+          </button>
+
+          <button class="btn-isl-action danger" 
+                  ${islSequence.length === 0 ? 'disabled style="opacity:0.5;"' : ''}
+                  onclick="clearISLSequence()"
+                  onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)"
+                  title="Clear entire sequence">
+            <div class="dwell-progress-bar"></div>
+            🗑️ Clear Sequence
+          </button>
+
+          <button class="btn-isl-action" 
+                  ${islSequence.length === 0 ? 'disabled style="opacity:0.5;"' : ''}
+                  onclick="openISLReviewModal()"
+                  onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)"
+                  title="Inspect linguistic rules and 5 sign parameters">
+            <div class="dwell-progress-bar"></div>
+            🔍 Review Grammar Analysis
+          </button>
+        </div>
+      </div>
+
+      <!-- CATEGORY FILTER TABS -->
+      <div class="isl-tabs-row">
+        ${islCategoriesData.map(cat => `
+          <button class="isl-tab-btn ${islCurrentCategory === cat.id ? 'active' : ''}" 
+                  onclick="filterISLCategory('${cat.id}')"
+                  onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)">
+            <div class="dwell-progress-bar"></div>
+            <span>${cat.icon}</span>
+            <span>${cat.name}</span>
+            <span class="isl-tab-badge">
+              ${cat.id === 'all' ? islSignsData.length : islSignsData.filter(s => s.category === cat.id).length}
+            </span>
+          </button>
+        `).join('')}
+      </div>
+
+      <!-- SIGN LIBRARY GRID -->
+      <div class="cards-grid isl-signs-grid">
+        <!-- FIRST CARD: BACK TO DASHBOARD FOR INSTANT EASY GAZE ESCAPE -->
+        <div class="card option-card back-card" 
+             data-index="back"
+             onmouseenter="startDwell(this)"
+             onmouseleave="cancelDwell(this)"
+             onclick="goHome()">
+          <div class="dwell-progress-bar"></div>
+          <div class="card-icon">↩️</div>
+          <div class="card-title">BACK TO DASHBOARD</div>
+          <div class="card-desc">Look here or glance left to return</div>
+        </div>
+
+        <!-- SIGNS IN CURRENT CATEGORY -->
+        ${filteredSigns.map((sign, idx) => `
+          <div class="card isl-sign-card"
+               data-sign-id="${sign.id}"
+               data-index="${idx}"
+               onmouseenter="startDwell(this)"
+               onmouseleave="cancelDwell(this)"
+               onclick="addISLSign('${sign.id}')">
+            <div class="dwell-progress-bar"></div>
+            <div class="isl-card-top">
+              <span class="isl-card-icon">${sign.icon || '🤟'}</span>
+              ${sign.is_verified ? '<span class="isl-verified-pill">✓ ISLRTC VERIFIED</span>' : '<span class="isl-verified-pill" style="border-color:#a855f7;color:#c084fc;">ASSISTIVE SYMBOL</span>'}
+            </div>
+            <div class="isl-card-gloss">${sign.gloss}</div>
+            <div class="isl-card-meaning">"${sign.meaning_en}"</div>
+            
+            <!-- 5 SIGN PARAMETERS DISPLAY -->
+            <div class="isl-card-params">
+              <div class="isl-param-row">
+                <span class="isl-param-name">🖐️ Hand:</span>
+                <span class="isl-param-val">${sign.handshape}</span>
+              </div>
+              <div class="isl-param-row">
+                <span class="isl-param-name">📍 Location:</span>
+                <span class="isl-param-val">${sign.location}</span>
+              </div>
+              <div class="isl-param-row">
+                <span class="isl-param-name">🔄 Motion:</span>
+                <span class="isl-param-val">${sign.movement}</span>
+              </div>
+              <div class="isl-param-row">
+                <span class="isl-param-name">😊 Face:</span>
+                <span class="isl-param-val">${sign.non_manual}</span>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+async function addISLSign(signId) {
+  const sign = islSignsData.find(s => s.id === signId);
+  if (!sign) return;
+  islSequence.push(sign);
+  showToast(`Added sign: ${sign.gloss}`);
+  await updateISLInterpretation();
+  renderView();
+}
+
+async function removeISLSign(index) {
+  if (index >= 0 && index < islSequence.length) {
+    const removed = islSequence.splice(index, 1)[0];
+    showToast(`Removed: ${removed.gloss}`);
+    await updateISLInterpretation();
+    renderView();
+  }
+}
+
+async function undoISLSign() {
+  if (islSequence.length > 0) {
+    const removed = islSequence.pop();
+    showToast(`Removed: ${removed.gloss}`);
+    await updateISLInterpretation();
+    renderView();
+  }
+}
+
+async function clearISLSequence() {
+  islSequence = [];
+  islInterpretedResult = null;
+  clearMessage();
+  showToast("Cleared sign sequence");
+  renderView();
+}
+
+function filterISLCategory(catId) {
+  islCurrentCategory = catId;
+  renderView();
+}
+
+async function updateISLInterpretation() {
+  if (islSequence.length === 0) {
+    islInterpretedResult = null;
+    clearMessage();
+    return;
+  }
+  try {
+    const res = await fetch('/api/isl/interpret', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ signs: islSequence.map(s => s.id) }),
+    });
+    if (res.ok) {
+      islInterpretedResult = await res.json();
+      setMessage(islInterpretedResult.sentence, '🤟');
+    }
+  } catch (err) {
+    console.error("Interpretation error:", err);
+    // fallback join
+    const fallbackSentence = islSequence.map(s => s.meaning_en).join(' ') + '.';
+    islInterpretedResult = {
+      sentence: fallbackSentence.charAt(0).toUpperCase() + fallbackSentence.slice(1),
+      syntax_type: 'Direct Translation Fallback',
+      confidence: 0.7
+    };
+    setMessage(islInterpretedResult.sentence, '🤟');
+  }
+}
+
+function confirmAndSpeakISL() {
+  if (!islInterpretedResult || !islInterpretedResult.sentence) return;
+  const sentence = islInterpretedResult.sentence;
+  islLastSpokenText = sentence;
+
+  speakText(sentence);
+  postMessageToServer(sentence, "Sign Language (ISL)", Boolean(islInterpretedResult.is_emergency));
+  showToast(`Spoke: "${sentence}"`);
+
+  // Visual feedback pulse
+  const liveEl = document.getElementById('isl-live-sentence');
+  if (liveEl) {
+    liveEl.style.transform = 'scale(1.04)';
+    liveEl.style.color = '#34d399';
+    setTimeout(() => {
+      if (liveEl) {
+        liveEl.style.transform = 'none';
+        liveEl.style.color = '#ffffff';
+      }
+    }, 400);
+  }
+}
+
+function replayISL() {
+  if (islLastSpokenText) {
+    speakText(islLastSpokenText);
+    showToast(`Replaying: "${islLastSpokenText}"`);
+  }
+}
+
+function openISLReviewModal() {
+  if (!islInterpretedResult || islSequence.length === 0) {
+    showToast("Select signs first to review grammar.");
+    return;
+  }
+
+  const modal = document.getElementById('isl-review-modal');
+  if (!modal) return;
+
+  // 1. Glosses
+  const glossesStrip = document.getElementById('isl-review-glosses');
+  if (glossesStrip) {
+    glossesStrip.innerHTML = islSequence.map(s => `
+      <span class="isl-token-chip">
+        <span>${s.icon}</span>
+        <strong>${s.gloss}</strong>
+      </span>
+    `).join(' <span style="color:#6366f1;font-weight:800;align-self:center;">➔</span> ');
+  }
+
+  // 2. Table of 5 parameters
+  const paramsTable = document.getElementById('isl-review-params-table');
+  if (paramsTable) {
+    paramsTable.innerHTML = `
+      <table class="isl-review-table">
+        <thead>
+          <tr>
+            <th>Sign</th>
+            <th>Meaning</th>
+            <th>🖐️ Handshape</th>
+            <th>📍 Location</th>
+            <th>🔄 Movement</th>
+            <th>😊 Non-Manual</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${islSequence.map(s => `
+            <tr>
+              <td><strong>${s.icon} ${s.gloss}</strong></td>
+              <td>${s.meaning_en}</td>
+              <td>${s.handshape}</td>
+              <td>${s.location}</td>
+              <td>${s.movement}</td>
+              <td>${s.non_manual}</td>
+              <td style="color:#34d399;font-size:0.75rem;">${s.source}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  // 3. Syntactic Derivation
+  const syntaxTypeEl = document.getElementById('isl-review-syntax-type');
+  if (syntaxTypeEl) syntaxTypeEl.textContent = islInterpretedResult.syntax_type || 'ISL SOV / Topic-Comment';
+
+  const nonmanualEl = document.getElementById('isl-review-nonmanual');
+  if (nonmanualEl) {
+    const nms = islSequence.map(s => s.non_manual).filter(Boolean);
+    nonmanualEl.textContent = nms.length ? nms.join('; ') : 'Neutral';
+  }
+
+  const rulesEl = document.getElementById('isl-review-rules');
+  if (rulesEl) {
+    rulesEl.textContent = islInterpretedResult.is_question 
+      ? 'ISL Sentence-final wh-interrogative with eyebrow furrow & head tilt'
+      : (islInterpretedResult.is_negated
+          ? 'Post-verbal negative particle with headshake non-manual'
+          : 'Topic-Comment ordering transformed into natural English SVO syntax');
+  }
+
+  // 4. Final Spoken Sentence
+  const finalSentenceEl = document.getElementById('isl-review-final-sentence');
+  if (finalSentenceEl) finalSentenceEl.textContent = islInterpretedResult.sentence;
+
+  modal.classList.remove('hidden');
+}
+
+function closeISLReviewModal() {
+  const modal = document.getElementById('isl-review-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function confirmAndSpeakISLFromModal() {
+  confirmAndSpeakISL();
+  closeISLReviewModal();
 }
 
 function goHome() {
