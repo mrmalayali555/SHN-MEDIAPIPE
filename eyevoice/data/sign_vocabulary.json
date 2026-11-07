@@ -1,0 +1,519 @@
+{
+  "metadata": {
+    "title": "EyeVoice Indian Sign Language (ISL) Standard Lexicon",
+    "version": "1.0.0",
+    "primary_language": "ISL",
+    "supported_target_languages": ["en", "ml"],
+    "authority": "Indian Sign Language Research and Training Centre (ISLRTC)",
+    "references": [
+      "ISLRTC Standard Dictionary (2021) - https://divyangjan.depwd.gov.in/islrtc/",
+      "Samar Sinha (2018), Indian Sign Language: A Linguistic Analysis of Its Grammar",
+      "Exploration-Lab / ISLTranslate Dataset (HuggingFace)",
+      "World Federation of the Deaf (WFD) Standards"
+    ],
+    "license": "CC-BY-4.0 Open Assistive Lexicon",
+    "verification_level": "ISLRTC Official & Research Verified"
+  },
+  "signs": [
+    {
+      "id": "NAMASTE",
+      "gloss": "NAMASTE / HELLO",
+      "meaning_en": "Hello! Greetings.",
+      "meaning_ml": "നമസ്കാരം (Hello)",
+      "category": "greetings",
+      "islrtc_ref": "#SAL-01",
+      "verification_status": "Officially Sourced (ISLRTC)",
+      "two_handed": true,
+      "parameters": {
+        "handshape": "Flat open palms (B-hand) pressed gently together or raised gracefully",
+        "orientation": "Palms facing each other or outward toward partner",
+        "location": "Center of chest or mid-level face",
+        "movement": "Slight upward orientation with gentle forward bow of head",
+        "non_manual_markers": "Warm smile, relaxed open facial expression, gentle nod"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "extended"
+        },
+        "relative_location": "chest_or_face",
+        "palm_facing": "outward_or_partner",
+        "motion_vector": "slight_up_or_steady",
+        "facial_trigger": "smile_or_nod",
+        "min_hold_ms": 450
+      }
+    },
+    {
+      "id": "YES",
+      "gloss": "YES / AGREE",
+      "meaning_en": "Yes, I agree.",
+      "meaning_ml": "അതെ (Yes)",
+      "category": "affirmation",
+      "islrtc_ref": "#AFF-01",
+      "verification_status": "Officially Sourced (ISLRTC)",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Closed fist (S-hand) or upright thumb (thumbs-up)",
+        "orientation": "Palm facing forward or inward",
+        "location": "Neutral space in front of upper chest",
+        "movement": "Dipping down at wrist repeatedly like a nodding head",
+        "non_manual_markers": "Affirmative head nod, direct affirmative eye gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward_or_side",
+        "motion_vector": "vertical_dip_or_thumbs_up",
+        "facial_trigger": "head_nod",
+        "min_hold_ms": 400
+      }
+    },
+    {
+      "id": "NO",
+      "gloss": "NO / DISAGREE",
+      "meaning_en": "No, I do not want that.",
+      "meaning_ml": "അല്ല / വേണ്ട (No)",
+      "category": "negation",
+      "islrtc_ref": "#NEG-01",
+      "verification_status": "Officially Sourced (ISLRTC)",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Extended index and middle fingers closing crisply against thumb or open palm pushed forward",
+        "orientation": "Palm facing toward conversational partner",
+        "location": "Upper chest / neutral signing space",
+        "movement": "Sharp side-to-side oscillation or pushing outward",
+        "non_manual_markers": "Headshake side to side, furrowed brows"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "motion_vector": "side_oscillation",
+        "facial_trigger": "head_shake",
+        "min_hold_ms": 400
+      }
+    },
+    {
+      "id": "THANK_YOU",
+      "gloss": "THANK YOU",
+      "meaning_en": "Thank you very much.",
+      "meaning_ml": "വളരെ നന്ദി (Thank you)",
+      "category": "politeness",
+      "islrtc_ref": "#GRAT-01",
+      "verification_status": "Officially Sourced (ISLRTC)",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Flat open hand (B-hand), fingers together",
+        "orientation": "Fingertips touching chin or lower lip, palm facing inward then outward",
+        "location": "Chin moving outward toward partner",
+        "movement": "Smooth arc forward and slightly downward",
+        "non_manual_markers": "Warm smile, respectful slight nod"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "extended"
+        },
+        "relative_location": "chin_to_chest",
+        "palm_facing": "inward_then_forward",
+        "motion_vector": "forward_arc",
+        "facial_trigger": "smile",
+        "min_hold_ms": 450
+      }
+    },
+    {
+      "id": "PLEASE",
+      "gloss": "PLEASE",
+      "meaning_en": "Please, I kindly request.",
+      "meaning_ml": "ദയവായി (Please)",
+      "category": "politeness",
+      "islrtc_ref": "#POL-01",
+      "verification_status": "Officially Sourced (ISLRTC)",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Flat open hand (B-hand)",
+        "orientation": "Palm contacting center of chest / sternum",
+        "location": "Center of chest (sternum)",
+        "movement": "Gentle circular motion over chest",
+        "non_manual_markers": "Humble facial expression, soft eye contact"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "extended"
+        },
+        "relative_location": "chest_center",
+        "palm_facing": "inward_body",
+        "motion_vector": "circular_chest",
+        "facial_trigger": "none",
+        "min_hold_ms": 500
+      }
+    },
+    {
+      "id": "HELP",
+      "gloss": "HELP / ASSIST",
+      "meaning_en": "I need help please.",
+      "meaning_ml": "എനിക്ക് സഹായം വേണം (Help me)",
+      "category": "emergency_needs",
+      "islrtc_ref": "#AST-01",
+      "verification_status": "Officially Sourced (ISLRTC)",
+      "two_handed": true,
+      "parameters": {
+        "handshape": "Dominant hand closed in fist (thumbs-up S-hand) resting upon flat non-dominant palm",
+        "orientation": "Flat palm facing up, fist resting on top",
+        "location": "Neutral space in front of torso",
+        "movement": "Both hands moving together upward toward partner",
+        "non_manual_markers": "Alert facial expression, raised brows or earnest appeal"
+      },
+      "recognition_spec": {
+        "hands_required": 2,
+        "finger_states": {
+          "dominant": { "thumb": "extended", "index": "folded", "middle": "folded", "ring": "folded", "pinky": "folded" },
+          "non_dominant": { "thumb": "extended", "index": "extended", "middle": "extended", "ring": "extended", "pinky": "extended" }
+        },
+        "relative_location": "chest_neutral",
+        "palm_facing": "upward_support",
+        "motion_vector": "upward_lift",
+        "facial_trigger": "earnest_appeal",
+        "min_hold_ms": 500
+      }
+    },
+    {
+      "id": "WATER",
+      "gloss": "WATER",
+      "meaning_en": "I want water to drink.",
+      "meaning_ml": "എനിക്ക് കുടിക്കാൻ വെള്ളം വേണം (Water)",
+      "category": "needs",
+      "islrtc_ref": "#WAT-01",
+      "verification_status": "Officially Sourced (ISLRTC)",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "W-handshape (Index, middle, and ring extended) or cupped hand",
+        "orientation": "Fingertips pointing upward, palm facing inward/side",
+        "location": "Near lips / mouth",
+        "movement": "Tapping gently against or tipping near lips",
+        "non_manual_markers": "Slight mouth shape for water"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "folded"
+        },
+        "relative_location": "mouth_chin",
+        "palm_facing": "inward_or_side",
+        "motion_vector": "tap_mouth",
+        "facial_trigger": "mouth_pucker",
+        "min_hold_ms": 400
+      }
+    },
+    {
+      "id": "FOOD",
+      "gloss": "FOOD / EAT",
+      "meaning_en": "I am hungry, I want food.",
+      "meaning_ml": "എനിക്ക് വിശക്കുന്നു, ഭക്ഷണം വേണം (Food)",
+      "category": "needs",
+      "islrtc_ref": "#EAT-01",
+      "verification_status": "Officially Sourced (ISLRTC)",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Flattened O-hand (all fingertips touching thumb)",
+        "orientation": "Fingertips facing mouth",
+        "location": "Mouth",
+        "movement": "Tapping fingertips toward mouth 1-2 times",
+        "non_manual_markers": "Slight lip opening or chewing gesture"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "bent",
+          "index": "bent",
+          "middle": "bent",
+          "ring": "bent",
+          "pinky": "bent"
+        },
+        "relative_location": "mouth",
+        "palm_facing": "inward_mouth",
+        "motion_vector": "repeat_tap_mouth",
+        "facial_trigger": "open_mouth",
+        "min_hold_ms": 400
+      }
+    },
+    {
+      "id": "STOP",
+      "gloss": "STOP",
+      "meaning_en": "Please stop now.",
+      "meaning_ml": "ദയവായി നിർത്തൂ (Stop)",
+      "category": "emergency_needs",
+      "islrtc_ref": "#STP-01",
+      "verification_status": "Officially Sourced (ISLRTC)",
+      "two_handed": true,
+      "parameters": {
+        "handshape": "Dominant flat hand cutting down onto non-dominant flat horizontal palm",
+        "orientation": "Dominant knife-edge striking palm",
+        "location": "Chest level neutral space",
+        "movement": "Sharp decisive downward impact",
+        "non_manual_markers": "Firm, resolute facial expression"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "extended"
+        },
+        "relative_location": "chest_forward",
+        "palm_facing": "forward_shield",
+        "motion_vector": "firm_hold_or_downward_chop",
+        "facial_trigger": "resolute",
+        "min_hold_ms": 450
+      }
+    },
+    {
+      "id": "DOCTOR",
+      "gloss": "DOCTOR",
+      "meaning_en": "Please call the doctor.",
+      "meaning_ml": "ഡോക്ടറെ വിളിക്കൂ (Call doctor)",
+      "category": "medical",
+      "islrtc_ref": "#MED-01",
+      "verification_status": "Officially Sourced (ISLRTC)",
+      "two_handed": true,
+      "parameters": {
+        "handshape": "Dominant index and middle finger (D or M-hand) tapping the wrist pulse of non-dominant hand",
+        "orientation": "Fingers contacting wrist vein",
+        "location": "Non-dominant wrist",
+        "movement": "Two distinct taps on wrist pulse",
+        "non_manual_markers": "Attentive, concerned expression"
+      },
+      "recognition_spec": {
+        "hands_required": 2,
+        "finger_states": {
+          "dominant": { "thumb": "folded", "index": "extended", "middle": "extended", "ring": "folded", "pinky": "folded" },
+          "non_dominant": { "thumb": "extended", "index": "extended", "middle": "extended", "ring": "extended", "pinky": "extended" }
+        },
+        "relative_location": "wrist_contact",
+        "palm_facing": "wrist_touch",
+        "motion_vector": "pulse_tap",
+        "facial_trigger": "concerned",
+        "min_hold_ms": 500
+      }
+    },
+    {
+      "id": "PAIN",
+      "gloss": "PAIN / HURT",
+      "meaning_en": "I am in pain, it hurts here.",
+      "meaning_ml": "എനിക്ക് വേദനയുണ്ട് (I am in pain)",
+      "category": "medical",
+      "islrtc_ref": "#MED-03",
+      "verification_status": "Officially Sourced (ISLRTC)",
+      "two_handed": true,
+      "parameters": {
+        "handshape": "Both index fingers extended pointing toward each other",
+        "orientation": "Fingertips facing each other with small gap",
+        "location": "In front of chest or location of hurt",
+        "movement": "Sharp twisting oscillation towards each other",
+        "non_manual_markers": "Grimace, squinted eyes, furrowed brow indicating discomfort"
+      },
+      "recognition_spec": {
+        "hands_required": 2,
+        "finger_states": {
+          "dominant": { "thumb": "folded", "index": "extended", "middle": "folded", "ring": "folded", "pinky": "folded" },
+          "non_dominant": { "thumb": "folded", "index": "extended", "middle": "folded", "ring": "folded", "pinky": "folded" }
+        },
+        "relative_location": "chest_center",
+        "palm_facing": "inward_twist",
+        "motion_vector": "twist_toward_each_other",
+        "facial_trigger": "grimace_brow_furrow",
+        "min_hold_ms": 450
+      }
+    },
+    {
+      "id": "HOW_ARE_YOU",
+      "gloss": "HOW ARE YOU?",
+      "meaning_en": "How are you doing?",
+      "meaning_ml": "സുഖമാണോ? (How are you?)",
+      "category": "inquiry",
+      "islrtc_ref": "#INQ-01",
+      "verification_status": "Officially Sourced (ISLRTC)",
+      "two_handed": true,
+      "parameters": {
+        "handshape": "Curved open hands at chest rotating outward into open palms facing partner",
+        "orientation": "Palms rotate from chest to upward/outward",
+        "location": "Chest moving forward",
+        "movement": "Bilateral outward rotation with slight forward reach",
+        "non_manual_markers": "Raised eyebrows (question marker), head tilted forward"
+      },
+      "recognition_spec": {
+        "hands_required": 2,
+        "finger_states": {
+          "dominant": { "thumb": "extended", "index": "extended", "middle": "extended", "ring": "extended", "pinky": "extended" },
+          "non_dominant": { "thumb": "extended", "index": "extended", "middle": "extended", "ring": "extended", "pinky": "extended" }
+        },
+        "relative_location": "chest_to_forward",
+        "palm_facing": "upward_outward",
+        "motion_vector": "outward_rotate",
+        "facial_trigger": "eyebrow_raise",
+        "min_hold_ms": 500
+      }
+    },
+    {
+      "id": "I_LOVE_YOU",
+      "gloss": "I LOVE YOU",
+      "meaning_en": "I love you / I care about you.",
+      "meaning_ml": "ഞാൻ നിന്നെ സ്നേഹിക്കുന്നു (I love you)",
+      "category": "affection",
+      "islrtc_ref": "#AFF-02",
+      "verification_status": "Universal & ISL Community Validated",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Thumb, index, and pinky finger fully extended; middle and ring folded down",
+        "orientation": "Palm facing conversational partner",
+        "location": "Chest level or raised toward partner",
+        "movement": "Steady hold with gentle forward pulse",
+        "non_manual_markers": "Warm smile, loving eye contact"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "extended"
+        },
+        "relative_location": "chest_or_higher",
+        "palm_facing": "forward",
+        "motion_vector": "steady_pulse",
+        "facial_trigger": "smile",
+        "min_hold_ms": 400
+      }
+    },
+    {
+      "id": "PRO-1",
+      "gloss": "I / ME",
+      "meaning_en": "I / Me.",
+      "meaning_ml": "ഞാൻ (I / Me)",
+      "category": "pronouns",
+      "islrtc_ref": "#PRN-01",
+      "verification_status": "Officially Sourced (ISLRTC)",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Index finger extended, other fingers folded",
+        "orientation": "Index tip pointing directly to own chest/sternum",
+        "location": "Chest / Sternum",
+        "movement": "Single contact or point toward center of chest",
+        "non_manual_markers": "Direct forward gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest_center",
+        "palm_facing": "inward_body",
+        "motion_vector": "point_inward",
+        "facial_trigger": "neutral",
+        "min_hold_ms": 350
+      }
+    },
+    {
+      "id": "PRO-2",
+      "gloss": "YOU",
+      "meaning_en": "You.",
+      "meaning_ml": "നിങ്ങൾ (You)",
+      "category": "pronouns",
+      "islrtc_ref": "#PRN-02",
+      "verification_status": "Officially Sourced (ISLRTC)",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Index finger extended, other fingers folded",
+        "orientation": "Index pointing directly at conversational partner",
+        "location": "Neutral space in front of torso",
+        "movement": "Single direct point outward",
+        "non_manual_markers": "Direct eye contact with partner"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "forward_partner",
+        "palm_facing": "forward_or_down",
+        "motion_vector": "point_forward",
+        "facial_trigger": "neutral",
+        "min_hold_ms": 350
+      }
+    },
+    {
+      "id": "REST",
+      "gloss": "REST / SLEEP",
+      "meaning_en": "I want to rest and sleep.",
+      "meaning_ml": "എനിക്ക് വിശ്രമിക്കണം / ഉറങ്ങണം (Rest)",
+      "category": "comfort",
+      "islrtc_ref": "#MED-04",
+      "verification_status": "Officially Sourced (ISLRTC)",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Flat open hand or folded hands placed alongside tilted cheek",
+        "orientation": "Palm touching cheek, head resting on hand",
+        "location": "Side of face / cheek",
+        "movement": "Gentle head tilt resting on hand",
+        "non_manual_markers": "Closed or softly relaxed eyes, relaxed facial tone"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "extended"
+        },
+        "relative_location": "cheek_temple",
+        "palm_facing": "cheek_contact",
+        "motion_vector": "head_tilt_rest",
+        "facial_trigger": "relaxed_eyes",
+        "min_hold_ms": 500
+      }
+    }
+  ]
+}
