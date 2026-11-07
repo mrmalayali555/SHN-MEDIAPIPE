@@ -407,18 +407,32 @@ class EyeTypeApp:
                           text="No face detected - look straight at the camera",
                           font=theme.FONT_BODY, fill=theme.WARN)
 
-        # live camera thumbnail so you can still see / align yourself
-        # while the full-screen calibration overlay is up
+        # live camera preview - larger during calibration so the user can
+        # position themselves and see the directional guidance arrows
         if self._photo is not None:
             pw = self._photo.width()
             ph = self._photo.height()
-            x0, y0 = w - pw - 18, 16
-            c.create_rectangle(x0 - 2, y0 - 2, x0 + pw + 2, y0 + ph + 2,
-                               outline=theme.ACCENT_DIM, width=1, tags="cam")
+            # place it centred-right with extra padding for visibility
+            x0, y0 = w - pw - 24, 16
+            # background panel behind the preview
+            c.create_rectangle(x0 - 6, y0 - 6, x0 + pw + 6, y0 + ph + 24,
+                               fill=theme.PANEL, outline=theme.ACCENT_DIM,
+                               width=1, tags="cam")
             c.create_image(x0, y0, image=self._photo, anchor="nw", tags="cam")
-            c.create_text(x0 + pw / 2, y0 + ph + 14,
-                          text="camera \u00b7 keep your face in frame",
-                          font=theme.FONT_SMALL, fill=theme.MUTED, tags="cam")
+            c.create_text(x0 + pw / 2, y0 + ph + 12,
+                          text="camera \u00b7 position yourself using the arrows",
+                          font=theme.FONT_SMALL, fill=theme.ACCENT, tags="cam")
+        else:
+            # no preview yet - show a placeholder to tell the user the camera
+            # is still starting up
+            pw, ph = 244, 184
+            x0, y0 = w - pw - 24, 16
+            c.create_rectangle(x0 - 6, y0 - 6, x0 + pw + 6, y0 + ph + 24,
+                               fill="#05070c", outline=theme.ACCENT_DIM,
+                               width=1, tags="cam")
+            c.create_text(x0 + pw / 2, y0 + ph / 2,
+                          text="Starting camera\u2026",
+                          font=theme.FONT_BODY, fill=theme.MUTED, tags="cam")
 
         point = self.cal_session.current_point
         if point:

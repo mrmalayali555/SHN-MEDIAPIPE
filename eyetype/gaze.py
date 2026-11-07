@@ -148,10 +148,16 @@ class GazeTracker(threading.Thread):
         A camera can be missing, busy or exposed under another index, so we
         probe 0-2 and require a real frame before accepting it.
         """
+        import sys
         wanted = self.camera
         candidates = [wanted] + [i for i in (0, 1, 2) if i != wanted]
+        # V4L2 is Linux-only; use DSHOW on Windows, CAP_ANY as fallback
+        if sys.platform == "win32":
+            backends = (cv2.CAP_DSHOW, cv2.CAP_ANY)
+        else:
+            backends = (cv2.CAP_V4L2, cv2.CAP_ANY)
         for idx in candidates:
-            for backend in (cv2.CAP_V4L2, cv2.CAP_ANY):
+            for backend in backends:
                 cap = cv2.VideoCapture(idx, backend)
                 if not cap.isOpened():
                     cap.release()
@@ -367,23 +373,33 @@ class GazeTracker(threading.Thread):
         h, w = frame.shape[:2]
         scale = self.preview_width / w
         vis = cv2.resize(frame, (self.preview_width, max(1, int(h * scale))))
+        vh, vw = vis.shape[:2]
 
         if pts is None:
             colour = WARN_BGR
             banner = "NO FACE - look at the camera"
+            # Draw a guide box in the centre so the user knows where to aim
+            gw, gh = int(vw * 0.45), int(vh * 0.55)
+            gx0, gy0 = (vw - gw) // 2, (vh - gh) // 2
+            cv2.rectangle(vis, (gx0, gy0), (gx0 + gw, gy0 + gh),
+                          WARN_BGR, 1, cv2.LINE_AA)
+            cv2.putText(vis, "Place face here", (gx0 + 4, gy0 - 6),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.35, WARN_BGR, 1, cv2.LINE_AA)
         else:
             colour = GOOD_BGR
-            banner = "FACE OK"
 
             def pix(idx: int) -> tuple[int, int]:
                 p = pts[idx]
                 return int(p.x * vis.shape[1]), int(p.y * vis.shape[0])
 
-            # face box, so it is obvious detection is live
+            # face bounding box
             xs = [p.x for p in pts]
             ys = [p.y for p in pts]
-            x0, x1 = int(min(xs) * vis.shape[1]), int(max(xs) * vis.shape[1])
-            y0, y1 = int(min(ys) * vis.shape[0]), int(max(ys) * vis.shape[0])
+            x0, x1 = int(min(xs) * vw), int(max(xs) * vw)
+            y0, y1 = int(min(ys) * vh), int(max(ys) * vh)
+            fw, fh = x1 - x0, y1 - y0
+            cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
+
             cv2.rectangle(vis, (x0, y0), (x1, y1), colour, 1)
 
             for contour in (LEFT_CONTOUR, RIGHT_CONTOUR):
@@ -393,13 +409,54 @@ class GazeTracker(threading.Thread):
                 c = pix(eye["iris"][0])
                 cv2.circle(vis, c, 4, GOOD_BGR, -1, cv2.LINE_AA)
 
+            # --- camera position guidance arrows and text ---
+            hints: list[str] = []
+            arrow_col = WARN_BGR
+            margin_x, margin_y = vw * 0.15, vh * 0.15
+
+            # horizontal guidance
+            if cx < vw * 0.35:
+                hints.append("Move RIGHT")
+                # draw right arrow on right side
+                ax = vw - 15
+                cv2.arrowedLine(vis, (ax - 20, vh // 2), (ax, vh // 2),
+                                arrow_col, 2, cv2.LINE_AA, tipLength=0.4)
+            elif cx > vw * 0.65:
+                hints.append("Move LEFT")
+                ax = 15
+                cv2.arrowedLine(vis, (ax + 20, vh // 2), (ax, vh // 2),
+                                arrow_col, 2, cv2.LINE_AA, tipLength=0.4)
+
+            # vertical guidance
+            if cy < vh * 0.30:
+                hints.append("Move DOWN")
+                ay = vh - 20
+                cv2.arrowedLine(vis, (vw // 2, ay - 20), (vw // 2, ay),
+                                arrow_col, 2, cv2.LINE_AA, tipLength=0.4)
+            elif cy > vh * 0.70:
+                hints.append("Move UP")
+                ay = 20
+                cv2.arrowedLine(vis, (vw // 2, ay + 20), (vw // 2, ay),
+                                arrow_col, 2, cv2.LINE_AA, tipLength=0.4)
+
+            # distance guidance (face size relative to frame)
+            face_ratio = max(fw / vw, fh / vh)
+            if face_ratio < 0.25:
+                hints.append("Move CLOSER")
+            elif face_ratio > 0.70:
+                hints.append("Move BACK")
+
+            if hints:
+                banner = " | ".join(hints)
+                colour = WARN_BGR
+            else:
+                banner = "FACE OK - position good!"
+
         # banner strip: keeps the status legible over any background
-        cv2.rectangle(vis, (0, vis.shape[0] - 16), (vis.shape[1], vis.shape[0]),
-                      (10, 14, 22), -1)
-        cv2.putText(vis, banner, (5, vis.shape[0] - 4),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.38, colour, 1, cv2.LINE_AA)
-        cv2.rectangle(vis, (0, 0), (vis.shape[1] - 1, vis.shape[0] - 1),
-                      colour, 1)
+        cv2.rectangle(vis, (0, vh - 18), (vw, vh), (10, 14, 22), -1)
+        cv2.putText(vis, banner, (4, vh - 5),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.34, colour, 1, cv2.LINE_AA)
+        cv2.rectangle(vis, (0, 0), (vw - 1, vh - 1), colour, 1)
         # PNG: Tk's photo image handles it everywhere (JPEG support varies)
         ok, buf = cv2.imencode(".png", vis, [cv2.IMWRITE_PNG_COMPRESSION, 3])
         return buf.tobytes() if ok else None

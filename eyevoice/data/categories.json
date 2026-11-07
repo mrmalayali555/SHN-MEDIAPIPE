@@ -1,0 +1,753 @@
+{
+  "categories": [
+    {
+      "id": "quick",
+      "name": "Quick Responses",
+      "icon": "⚡",
+      "color": "#4cc9f0",
+      "description": "Fast, everyday responses",
+      "options": [
+        {
+          "id": "yes",
+          "label": "Yes",
+          "message": "Yes.",
+          "icon": "✅",
+          "custom": false
+        },
+        {
+          "id": "no",
+          "label": "No",
+          "message": "No.",
+          "icon": "❌",
+          "custom": false
+        },
+        {
+          "id": "stop",
+          "label": "Stop",
+          "message": "Please stop.",
+          "icon": "🛑",
+          "custom": false
+        },
+        {
+          "id": "dont_go",
+          "label": "Don't Go",
+          "message": "Please don't go.",
+          "icon": "🚫",
+          "custom": false
+        },
+        {
+          "id": "wait",
+          "label": "Wait",
+          "message": "Please wait.",
+          "icon": "⏳",
+          "custom": false
+        },
+        {
+          "id": "come_here",
+          "label": "Come Here",
+          "message": "Please come here.",
+          "icon": "👋",
+          "custom": false
+        },
+        {
+          "id": "go_away",
+          "label": "Go Away",
+          "message": "Please leave me alone for now.",
+          "icon": "🚪",
+          "custom": false
+        },
+        {
+          "id": "thank_you",
+          "label": "Thank You",
+          "message": "Thank you very much.",
+          "icon": "🙏",
+          "custom": false
+        },
+        {
+          "id": "sorry",
+          "label": "Sorry",
+          "message": "I am sorry.",
+          "icon": "😔",
+          "custom": false
+        },
+        {
+          "id": "dont_understand",
+          "label": "I Don't Understand",
+          "message": "I don't understand what you said.",
+          "icon": "❓",
+          "custom": false
+        },
+        {
+          "id": "repeat",
+          "label": "Repeat That",
+          "message": "Can you please repeat that?",
+          "icon": "🔄",
+          "custom": false
+        },
+        {
+          "id": "help",
+          "label": "Please Help",
+          "message": "Please help me.",
+          "icon": "🆘",
+          "custom": false
+        }
+      ]
+    },
+    {
+      "id": "people",
+      "name": "People",
+      "icon": "👥",
+      "color": "#a78bfa",
+      "description": "Call someone or ask about a person",
+      "options": [
+        {
+          "id": "family",
+          "label": "Family",
+          "message": "Please call my family.",
+          "icon": "👨‍👩‍👧‍👦",
+          "custom": false
+        },
+        {
+          "id": "mother",
+          "label": "Mother",
+          "message": "Please call my mother.",
+          "icon": "👩",
+          "custom": false
+        },
+        {
+          "id": "father",
+          "label": "Father",
+          "message": "Please call my father.",
+          "icon": "👨",
+          "custom": false
+        },
+        {
+          "id": "brother",
+          "label": "Brother",
+          "message": "Please call my brother.",
+          "icon": "👦",
+          "custom": false
+        },
+        {
+          "id": "sister",
+          "label": "Sister",
+          "message": "Please call my sister.",
+          "icon": "👧",
+          "custom": false
+        },
+        {
+          "id": "doctor",
+          "label": "Doctor",
+          "message": "Please call my doctor.",
+          "icon": "👨‍⚕️",
+          "custom": false
+        },
+        {
+          "id": "nurse",
+          "label": "Nurse",
+          "message": "Please call the nurse.",
+          "icon": "👩‍⚕️",
+          "custom": false
+        },
+        {
+          "id": "caregiver",
+          "label": "Caregiver",
+          "message": "Please call my caregiver.",
+          "icon": "🧑‍🤝‍🧑",
+          "custom": false
+        },
+        {
+          "id": "friend",
+          "label": "Friend",
+          "message": "Please call my friend.",
+          "icon": "🤝",
+          "custom": false
+        },
+        {
+          "id": "other_person",
+          "label": "Other",
+          "message": "Please call someone for me.",
+          "icon": "👤",
+          "custom": false
+        }
+      ]
+    },
+    {
+      "id": "needs",
+      "name": "My Needs",
+      "icon": "🎯",
+      "color": "#3ddc97",
+      "description": "Everyday needs and requests",
+      "options": [
+        {
+          "id": "water",
+          "label": "Water",
+          "message": "I need some water, please.",
+          "icon": "💧",
+          "custom": false
+        },
+        {
+          "id": "food",
+          "label": "Food",
+          "message": "I am hungry. Can I have some food?",
+          "icon": "🍽️",
+          "custom": false
+        },
+        {
+          "id": "blanket",
+          "label": "Blanket",
+          "message": "Can I have a blanket, please?",
+          "icon": "🛏️",
+          "custom": false
+        },
+        {
+          "id": "pillow",
+          "label": "Pillow",
+          "message": "Can you adjust my pillow, please?",
+          "icon": "🛋️",
+          "custom": false
+        },
+        {
+          "id": "medicine",
+          "label": "Medicine",
+          "message": "I need my medicine, please.",
+          "icon": "💊",
+          "custom": false
+        },
+        {
+          "id": "toilet",
+          "label": "Toilet",
+          "message": "I need to use the toilet.",
+          "icon": "🚻",
+          "custom": false
+        },
+        {
+          "id": "sleep",
+          "label": "Sleep",
+          "message": "I want to sleep now.",
+          "icon": "😴",
+          "custom": false
+        },
+        {
+          "id": "clean",
+          "label": "Clean Me",
+          "message": "I need to be cleaned up, please.",
+          "icon": "🧼",
+          "custom": false
+        },
+        {
+          "id": "change_clothes",
+          "label": "Change Clothes",
+          "message": "I need my clothes changed, please.",
+          "icon": "👕",
+          "custom": false
+        },
+        {
+          "id": "lighting",
+          "label": "Adjust Lighting",
+          "message": "Can you adjust the lighting, please?",
+          "icon": "💡",
+          "custom": false
+        },
+        {
+          "id": "glasses",
+          "label": "My Glasses",
+          "message": "Can you bring me my glasses?",
+          "icon": "👓",
+          "custom": false
+        },
+        {
+          "id": "phone",
+          "label": "My Phone",
+          "message": "Can you bring me my phone?",
+          "icon": "📱",
+          "custom": false
+        }
+      ]
+    },
+    {
+      "id": "bed",
+      "name": "Bed & Position",
+      "icon": "🛌",
+      "color": "#f59e0b",
+      "description": "Bed adjustments and body position",
+      "options": [
+        {
+          "id": "raise_bed",
+          "label": "Raise Bed",
+          "message": "Please raise the bed.",
+          "icon": "⬆️",
+          "custom": false
+        },
+        {
+          "id": "lower_bed",
+          "label": "Lower Bed",
+          "message": "Please lower the bed.",
+          "icon": "⬇️",
+          "custom": false
+        },
+        {
+          "id": "turn_left",
+          "label": "Turn Me Left",
+          "message": "Please turn me to my left side.",
+          "icon": "⬅️",
+          "custom": false
+        },
+        {
+          "id": "turn_right",
+          "label": "Turn Me Right",
+          "message": "Please turn me to my right side.",
+          "icon": "➡️",
+          "custom": false
+        },
+        {
+          "id": "change_position",
+          "label": "Change Position",
+          "message": "Please change my sleeping position.",
+          "icon": "🔄",
+          "custom": false
+        },
+        {
+          "id": "adjust_head",
+          "label": "Adjust Head",
+          "message": "Please adjust my head position.",
+          "icon": "🔝",
+          "custom": false
+        },
+        {
+          "id": "adjust_leg",
+          "label": "Adjust Legs",
+          "message": "Please adjust my leg position.",
+          "icon": "🦵",
+          "custom": false
+        },
+        {
+          "id": "comfortable",
+          "label": "Make Comfortable",
+          "message": "I am not comfortable. Can you help me?",
+          "icon": "✨",
+          "custom": false
+        }
+      ]
+    },
+    {
+      "id": "room",
+      "name": "Room & Devices",
+      "icon": "📺",
+      "color": "#06b6d4",
+      "description": "Control TV, lights, fan and room devices",
+      "options": [
+        {
+          "id": "tv_on",
+          "label": "TV On",
+          "message": "Please turn on the TV.",
+          "icon": "📺",
+          "custom": false
+        },
+        {
+          "id": "tv_off",
+          "label": "TV Off",
+          "message": "Please turn off the TV.",
+          "icon": "📴",
+          "custom": false
+        },
+        {
+          "id": "volume_up",
+          "label": "Volume Up",
+          "message": "Please increase the volume.",
+          "icon": "🔊",
+          "custom": false
+        },
+        {
+          "id": "volume_down",
+          "label": "Volume Down",
+          "message": "Please decrease the volume.",
+          "icon": "🔉",
+          "custom": false
+        },
+        {
+          "id": "channel_next",
+          "label": "Next Channel",
+          "message": "Please switch to the next channel.",
+          "icon": "⏭️",
+          "custom": false
+        },
+        {
+          "id": "channel_prev",
+          "label": "Previous Channel",
+          "message": "Please go to the previous channel.",
+          "icon": "⏮️",
+          "custom": false
+        },
+        {
+          "id": "light_on",
+          "label": "Light On",
+          "message": "Please turn on the light.",
+          "icon": "💡",
+          "custom": false
+        },
+        {
+          "id": "light_off",
+          "label": "Light Off",
+          "message": "Please turn off the light.",
+          "icon": "🌙",
+          "custom": false
+        },
+        {
+          "id": "fan_on",
+          "label": "Fan On",
+          "message": "Please turn on the fan.",
+          "icon": "🌀",
+          "custom": false
+        },
+        {
+          "id": "fan_off",
+          "label": "Fan Off",
+          "message": "Please turn off the fan.",
+          "icon": "⭕",
+          "custom": false
+        },
+        {
+          "id": "temp_up",
+          "label": "Warmer",
+          "message": "I feel cold. Can you make it warmer?",
+          "icon": "🔥",
+          "custom": false
+        },
+        {
+          "id": "temp_down",
+          "label": "Cooler",
+          "message": "I feel hot. Can you make it cooler?",
+          "icon": "❄️",
+          "custom": false
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "name": "Health & Medical",
+      "icon": "🏥",
+      "color": "#ef4444",
+      "description": "Health concerns and medical needs",
+      "options": [
+        {
+          "id": "pain",
+          "label": "I Am in Pain",
+          "message": "I am in pain. Please help me.",
+          "icon": "😣",
+          "custom": false
+        },
+        {
+          "id": "uncomfortable",
+          "label": "Uncomfortable",
+          "message": "I am feeling very uncomfortable.",
+          "icon": "😖",
+          "custom": false
+        },
+        {
+          "id": "dizzy",
+          "label": "Dizzy",
+          "message": "I am feeling dizzy.",
+          "icon": "😵",
+          "custom": false
+        },
+        {
+          "id": "nauseous",
+          "label": "Nauseous",
+          "message": "I am feeling nauseous.",
+          "icon": "🤢",
+          "custom": false
+        },
+        {
+          "id": "headache",
+          "label": "Headache",
+          "message": "I have a headache.",
+          "icon": "🤕",
+          "custom": false
+        },
+        {
+          "id": "breathing",
+          "label": "Breathing Difficulty",
+          "message": "I am having difficulty breathing. Please help immediately!",
+          "icon": "😤",
+          "custom": false
+        },
+        {
+          "id": "medical_help",
+          "label": "Medical Help",
+          "message": "I need medical assistance right now.",
+          "icon": "🚑",
+          "custom": false
+        },
+        {
+          "id": "weak",
+          "label": "Feeling Weak",
+          "message": "I am feeling very weak.",
+          "icon": "😩",
+          "custom": false
+        },
+        {
+          "id": "need_medicine",
+          "label": "Need Medicine",
+          "message": "I need my medicine now, please.",
+          "icon": "💊",
+          "custom": false
+        },
+        {
+          "id": "chest_pain",
+          "label": "Chest Pain",
+          "message": "I am experiencing chest pain. Please get help!",
+          "icon": "💔",
+          "custom": false
+        }
+      ]
+    },
+    {
+      "id": "emotions",
+      "name": "Emotions",
+      "icon": "😊",
+      "color": "#ec4899",
+      "description": "Express how you are feeling",
+      "options": [
+        {
+          "id": "happy",
+          "label": "Happy",
+          "message": "I am feeling happy.",
+          "icon": "😊",
+          "custom": false
+        },
+        {
+          "id": "sad",
+          "label": "Sad",
+          "message": "I am feeling sad.",
+          "icon": "😢",
+          "custom": false
+        },
+        {
+          "id": "angry",
+          "label": "Angry",
+          "message": "I am feeling angry.",
+          "icon": "😠",
+          "custom": false
+        },
+        {
+          "id": "lonely",
+          "label": "Lonely",
+          "message": "I am feeling lonely. Can someone stay with me?",
+          "icon": "😞",
+          "custom": false
+        },
+        {
+          "id": "afraid",
+          "label": "Afraid",
+          "message": "I am feeling afraid.",
+          "icon": "😨",
+          "custom": false
+        },
+        {
+          "id": "tired",
+          "label": "Tired",
+          "message": "I am feeling very tired.",
+          "icon": "😴",
+          "custom": false
+        },
+        {
+          "id": "bored",
+          "label": "Bored",
+          "message": "I am feeling bored.",
+          "icon": "😑",
+          "custom": false
+        },
+        {
+          "id": "comfortable_feel",
+          "label": "Comfortable",
+          "message": "I am feeling comfortable. Thank you.",
+          "icon": "😌",
+          "custom": false
+        },
+        {
+          "id": "uncomfortable_feel",
+          "label": "Uncomfortable",
+          "message": "I am not feeling comfortable.",
+          "icon": "😣",
+          "custom": false
+        },
+        {
+          "id": "excited",
+          "label": "Excited",
+          "message": "I am feeling excited!",
+          "icon": "🤩",
+          "custom": false
+        },
+        {
+          "id": "frustrated",
+          "label": "Frustrated",
+          "message": "I am feeling frustrated.",
+          "icon": "😤",
+          "custom": false
+        },
+        {
+          "id": "grateful",
+          "label": "Grateful",
+          "message": "I am feeling grateful. Thank you for everything.",
+          "icon": "🥰",
+          "custom": false
+        }
+      ]
+    },
+    {
+      "id": "visual_language",
+      "name": "Visual Language",
+      "icon": "🧠",
+      "color": "#8b5cf6",
+      "description": "Build sentences from visual concepts",
+      "options": [
+        {
+          "id": "i_me",
+          "label": "I / Me",
+          "message": "I",
+          "icon": "🙋",
+          "custom": false,
+          "is_token": true
+        },
+        {
+          "id": "you",
+          "label": "You",
+          "message": "You",
+          "icon": "👉",
+          "custom": false,
+          "is_token": true
+        },
+        {
+          "id": "want",
+          "label": "Want",
+          "message": "want",
+          "icon": "💭",
+          "custom": false,
+          "is_token": true
+        },
+        {
+          "id": "need_vl",
+          "label": "Need",
+          "message": "need",
+          "icon": "🎯",
+          "custom": false,
+          "is_token": true
+        },
+        {
+          "id": "feel",
+          "label": "Feel",
+          "message": "feel",
+          "icon": "❤️",
+          "custom": false,
+          "is_token": true
+        },
+        {
+          "id": "go_vl",
+          "label": "Go",
+          "message": "to go",
+          "icon": "🚶",
+          "custom": false,
+          "is_token": true
+        },
+        {
+          "id": "eat",
+          "label": "Eat",
+          "message": "to eat",
+          "icon": "🍴",
+          "custom": false,
+          "is_token": true
+        },
+        {
+          "id": "drink",
+          "label": "Drink",
+          "message": "to drink",
+          "icon": "🥤",
+          "custom": false,
+          "is_token": true
+        },
+        {
+          "id": "good",
+          "label": "Good",
+          "message": "good",
+          "icon": "👍",
+          "custom": false,
+          "is_token": true
+        },
+        {
+          "id": "bad",
+          "label": "Bad",
+          "message": "bad",
+          "icon": "👎",
+          "custom": false,
+          "is_token": true
+        },
+        {
+          "id": "now",
+          "label": "Now",
+          "message": "right now",
+          "icon": "⏰",
+          "custom": false,
+          "is_token": true
+        },
+        {
+          "id": "please_vl",
+          "label": "Please",
+          "message": "please",
+          "icon": "🙏",
+          "custom": false,
+          "is_token": true
+        }
+      ]
+    },
+    {
+      "id": "keyboard",
+      "name": "Text / Keyboard",
+      "icon": "⌨️",
+      "color": "#64748b",
+      "description": "Type with the eye-tracking keyboard",
+      "is_external": true,
+      "options": []
+    }
+  ],
+  "emergency": {
+    "label": "EMERGENCY",
+    "message": "EMERGENCY! I need immediate help!",
+    "icon": "🚨",
+    "color": "#ff5c7a",
+    "sub_options": [
+      {
+        "id": "immediate_help",
+        "label": "Immediate Help",
+        "message": "I need help right now! This is an emergency!",
+        "icon": "🆘"
+      },
+      {
+        "id": "medical_emergency",
+        "label": "Medical Emergency",
+        "message": "I need urgent medical attention!",
+        "icon": "🚑"
+      },
+      {
+        "id": "breathing_emergency",
+        "label": "Can't Breathe",
+        "message": "I cannot breathe! Please help me immediately!",
+        "icon": "😰"
+      },
+      {
+        "id": "call_emergency",
+        "label": "Call Emergency Services",
+        "message": "Please call emergency services immediately!",
+        "icon": "📞"
+      }
+    ]
+  },
+  "message_history": [
+    {
+      "text": "Hello from patient!",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-07 21:12:11"
+    }
+  ]
+}

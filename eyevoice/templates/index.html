@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EyeVoice – Patient Communication System</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <!-- ===== TOP BAR ===== -->
+  <header id="topbar">
+    <div class="topbar-left">
+      <span class="brand">👁️ EyeVoice</span>
+      <button class="badge-mode" id="dwell-toggle-btn" onclick="toggleDwellMode()" title="Toggle Auto-Click when resting gaze on a card">
+        ⏱️ Eye Dwell Click: ON (0.8s)
+      </button>
+    </div>
+    <div class="topbar-center" id="message-bar">
+      <div class="msg-box">
+        <span class="msg-icon" id="message-icon">💬</span>
+        <span id="message-text">Select an option to communicate</span>
+      </div>
+      <button id="speak-btn" class="btn-action btn-speak" title="Speak this message aloud" disabled>
+        🔊 Speak
+      </button>
+      <button id="clear-msg-btn" class="btn-action btn-clear-msg" title="Clear message" style="display:none">
+        ✕ Clear
+      </button>
+    </div>
+    <div class="topbar-right">
+      <button id="btn-remote" class="btn-topbar btn-remote-toggle" title="Room & Device Remote" onclick="openRemoteModal()">
+        📺 Remote
+      </button>
+      <button id="customize-toggle" class="btn-topbar btn-customize" title="Caregiver Customization" onclick="openCustomize()">
+        ⚙️ Settings
+      </button>
+      <button id="emergency-btn" class="btn-topbar btn-emergency" title="Urgent Emergency Assistance" onclick="openEmergency()">
+        🚨 EMERGENCY
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== NAVIGATION BREADCRUMB & CONTROLS ===== -->
+  <nav id="breadcrumb">
+    <div class="nav-left">
+      <button id="home-btn" class="breadcrumb-item active" onclick="goHome()">🏠 Dashboard Home</button>
+      <span id="breadcrumb-separator" class="breadcrumb-sep" style="display:none">›</span>
+      <span id="breadcrumb-current" class="breadcrumb-item breadcrumb-active" style="display:none"></span>
+    </div>
+    <div class="nav-hints">
+      <span class="hint-key">Navigate: <kbd>◀</kbd> <kbd>▲</kbd> <kbd>▼</kbd> <kbd>▶</kbd></span>
+      <span class="hint-key">Select: <kbd>Enter</kbd> / <kbd>Space</kbd></span>
+      <span class="hint-key">Back: <kbd>Esc</kbd> / <kbd>Backspace</kbd></span>
+    </div>
+  </nav>
+
+  <!-- ===== MAIN CONTENT CONTAINER ===== -->
+  <main id="content">
+    <div id="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Initializing EyeVoice Interface...</p>
+    </div>
+  </main>
+
+  <!-- ===== TV / ROOM DEVICE REMOTE MODAL (Part 6) ===== -->
+  <div id="remote-modal" class="overlay hidden">
+    <div class="overlay-content remote-content">
+      <div class="modal-header">
+        <h2>📺 Room & Device Remote (Simulated)</h2>
+        <button class="btn-close" onclick="closeRemoteModal()">✕</button>
+      </div>
+      <p class="sim-notice">ℹ️ Hardware Simulation: These buttons send immediate signals to caregiver/room system.</p>
+      
+      <div class="remote-grid">
+        <div class="remote-section">
+          <h3>TV Controls</h3>
+          <div class="remote-buttons">
+            <button class="remote-btn" onclick="triggerRemoteAction('TV Power', 'Turn TV ON/OFF')">🔴 TV Power</button>
+            <button class="remote-btn" onclick="triggerRemoteAction('Volume Up', 'Increase TV volume')">🔊 Vol +</button>
+            <button class="remote-btn" onclick="triggerRemoteAction('Volume Down', 'Decrease TV volume')">🔉 Vol -</button>
+            <button class="remote-btn" onclick="triggerRemoteAction('Channel Next', 'Switch to next channel')">⏭️ CH +</button>
+            <button class="remote-btn" onclick="triggerRemoteAction('Channel Prev', 'Switch to previous channel')">⏮️ CH -</button>
+          </div>
+        </div>
+
+        <div class="remote-section">
+          <h3>Room Environment</h3>
+          <div class="remote-buttons">
+            <button class="remote-btn" onclick="triggerRemoteAction('Room Light', 'Toggle room lights')">💡 Lights</button>
+            <button class="remote-btn" onclick="triggerRemoteAction('Ceiling Fan', 'Toggle ceiling fan')">🌀 Fan</button>
+            <button class="remote-btn" onclick="triggerRemoteAction('AC Warmer', 'Set temperature warmer')">🔥 Warmer</button>
+            <button class="remote-btn" onclick="triggerRemoteAction('AC Cooler', 'Set temperature cooler')">❄️ Cooler</button>
+          </div>
+        </div>
+      </div>
+      <div class="remote-footer">
+        <button class="btn-secondary" onclick="closeRemoteModal()">Close Remote</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== EMERGENCY OVERLAY (Part 8) ===== -->
+  <div id="emergency-overlay" class="overlay hidden">
+    <div class="overlay-content emergency-content">
+      <div class="emergency-header">
+        <span class="emergency-icon-anim">🚨</span>
+        <h2>EMERGENCY ASSISTANCE</h2>
+      </div>
+      <p class="emergency-sub">Select urgent assistance type, or activate immediate alarm:</p>
+      <div id="emergency-options" class="emergency-grid">
+        <!-- Injected via JS -->
+      </div>
+      <div class="emergency-actions">
+        <button class="btn-emergency-full" onclick="triggerEmergencyMessage('EMERGENCY! I need immediate urgent help right now!')">
+          🚨 ALARM ALL CAREGIVERS NOW
+        </button>
+        <button class="btn-cancel" onclick="closeEmergency()">Cancel – False Alarm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ACTIVE EMERGENCY BANNER ===== -->
+  <div id="emergency-active" class="emergency-banner hidden">
+    <div class="emergency-banner-content">
+      <span class="emergency-pulse">🚨</span>
+      <div class="emergency-info">
+        <strong id="emergency-active-title">EMERGENCY ALERT BROADCASTED</strong>
+        <span id="emergency-active-text">Caregiver alerted. Help is on the way.</span>
+      </div>
+      <button class="btn-dismiss-emergency" onclick="dismissEmergency()">Dismiss Alert</button>
+    </div>
+  </div>
+
+  <!-- ===== CAREGIVER / ADMIN CUSTOMIZATION MODAL (Part 11) ===== -->
+  <div id="customize-modal" class="overlay hidden">
+    <div class="overlay-content customize-content">
+      <div class="modal-header">
+        <h2>⚙️ Caregiver Customization System</h2>
+        <button class="btn-close" onclick="closeCustomize()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Add, edit, or customize communication options to fit the patient's exact daily needs.</p>
+        
+        <div class="form-row">
+          <label for="cust-category-select">Select Category to Manage:</label>
+          <select id="cust-category-select" class="form-select" onchange="loadCategoryOptionsForEdit()">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+
+        <div class="cust-section-title">Current Options in Category:</div>
+        <div id="cust-options-list" class="cust-options-container">
+          <!-- Populated via JS -->
+        </div>
+
+        <hr class="divider">
+
+        <h3 class="cust-add-heading">➕ Add New Patient Option</h3>
+        <div class="add-option-form">
+          <div class="form-grid">
+            <div class="form-group col-icon">
+              <label for="cust-icon">Icon / Emoji</label>
+              <input type="text" id="cust-icon" class="form-input" value="💬" maxlength="4">
+            </div>
+            <div class="form-group col-label">
+              <label for="cust-label">Button Label</label>
+              <input type="text" id="cust-label" class="form-input" placeholder="e.g. My Glasses">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="cust-message">Spoken Message</label>
+            <input type="text" id="cust-message" class="form-input" placeholder="e.g. Can you please bring me my glasses?">
+          </div>
+          <button class="btn-add-option" id="cust-add-btn" onclick="addCustomOption()">+ Add to Patient Board</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== EDIT OPTION SUB-MODAL ===== -->
+  <div id="edit-modal" class="overlay hidden">
+    <div class="overlay-content edit-content">
+      <div class="modal-header">
+        <h2>✏️ Edit Option</h2>
+        <button class="btn-close" onclick="closeEditModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-cat-id">
+        <input type="hidden" id="edit-opt-id">
+        <div class="form-group">
+          <label for="edit-icon">Icon</label>
+          <input type="text" id="edit-icon" class="form-input" maxlength="4">
+        </div>
+        <div class="form-group">
+          <label for="edit-label">Label</label>
+          <input type="text" id="edit-label" class="form-input">
+        </div>
+        <div class="form-group">
+          <label for="edit-message">Spoken Message</label>
+          <input type="text" id="edit-message" class="form-input">
+        </div>
+        <div class="edit-modal-actions">
+          <button class="btn-save" onclick="saveEditOption()">💾 Save Changes</button>
+          <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TEAMMATE KEYBOARD INTEGRATION MODAL (Part 10) ===== -->
+  <div id="keyboard-modal" class="overlay hidden">
+    <div class="overlay-content keyboard-content">
+      <div class="modal-header">
+        <h2>⌨️ Text / Keyboard Communication</h2>
+        <button class="btn-close" onclick="closeKeyboardModal()">✕</button>
+      </div>
+      <div class="keyboard-body">
+        <p class="kb-highlight">This connects directly to the teammate's EyeType eye-tracking keyboard.</p>
+        <p>It activates the real-time webcam MediaPipe FaceLandmarker, calibration matrix, and dwell-typing interface.</p>
+        
+        <div class="kb-features">
+          <div class="kb-feature-item">👁️ MediaPipe Eye & Gaze Tracking</div>
+          <div class="kb-feature-item">🎯 9-Point Personalized Calibration</div>
+          <div class="kb-feature-item">💡 Predictive Next-Word Suggestions</div>
+          <div class="kb-feature-item">⚡ Blink-to-Click & Dwell Timer</div>
+        </div>
+
+        <div class="keyboard-actions">
+          <button class="btn-launch-keyboard" id="launch-keyboard-btn" onclick="launchTeammateKeyboard()">
+            🚀 Launch Eye-Tracking Keyboard Window
+          </button>
+          <button class="btn-secondary" onclick="closeKeyboardModal()">Back to Dashboard</button>
+        </div>
+        <div id="keyboard-status" class="kb-status-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TOAST NOTIFICATION ===== -->
+  <div id="toast" class="toast hidden">
+    <span id="toast-text"></span>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
+
