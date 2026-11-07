@@ -16,8 +16,8 @@
         <div class="dwell-progress-bar"></div>
         ⬅ BACK / HOME
       </button>
-      <button class="badge-mode" id="gaze-mode-btn" onclick="toggleGazeSource()" title="Switch between Web Interactive Gaze and Local Webcam Tracker">
-        🖱️ Gaze: INTERACTIVE (DWELL)
+      <button class="badge-mode active-gaze" id="gaze-mode-btn" onclick="toggleGazeSource()" title="Switch between Browser Webcam Eye Tracking and Click/Touch Mode">
+        👁️ Gaze: WEBCAM LIVE
       </button>
       <button class="badge-mode" id="dwell-toggle-btn" onclick="toggleDwellMode()" title="Toggle Auto-Click when resting gaze on a card">
         ⏱️ Dwell Click: ON (0.8s)
@@ -326,17 +326,17 @@
   <!-- ===== FLOATING EYE GAZE RETICLE ===== -->
   <div id="gaze-reticle" class="gaze-reticle"></div>
 
-  <!-- ===== LIVE MEDIAPIPE CAMERA HUD (PIP - Hidden by default for website friendliness) ===== -->
-  <div id="camera-hud" class="camera-hud" style="display: none;">
+  <!-- ===== LIVE MEDIAPIPE CAMERA HUD (Browser-side tracking) ===== -->
+  <div id="camera-hud" class="camera-hud">
     <div class="hud-header">
-      <span class="hud-indicator" id="hud-status">● Live MediaPipe</span>
+      <span class="hud-indicator" id="hud-status">● Loading MediaPipe…</span>
       <div class="hud-actions">
-        <button class="btn-hud-recenter" onclick="recenterGaze()" title="Align center with where you are looking right now">🎯 Recenter</button>
+        <button class="btn-hud-recenter" onclick="recenterGaze()" title="Re-center your gaze">🎯 Recenter</button>
         <button class="btn-hud-toggle" onclick="toggleHudVisibility()" title="Minimize / Show Camera">_</button>
       </div>
     </div>
     <div id="hud-body">
-      <img id="hud-preview-img" alt="MediaPipe Face & Eye Mesh" src="/static/placeholder_cam.png" onerror="this.style.display='none'">
+      <canvas id="tracker-canvas" width="220" height="165" style="width:100%;border-radius:4px;background:#000;"></canvas>
       <div class="hud-footer">
         <span id="hud-fps">-- FPS</span>
         <span id="hud-blink-indicator" class="hud-blink-chip">Blink: Ready</span>
@@ -344,12 +344,15 @@
     </div>
   </div>
 
+  <!-- Hidden video element for browser camera access -->
+  <video id="tracker-video" autoplay playsinline muted style="position:absolute;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;"></video>
+
   <!-- ===== TOAST NOTIFICATION ===== -->
   <div id="toast" class="toast hidden">
     <span id="toast-text"></span>
   </div>
 
   <script src="/static/js/app.js"></script>
+  <script type="module" src="/static/js/browser_tracker.js"></script>
 </body>
 </html>
-

@@ -92,12 +92,12 @@ function cancelDwell(cardEl) {
 
 // ============================================================================
 // MediaPipe Real-Time Eye Gaze & Blink Stream (Hackathon Core)
-// Default to website-friendly interactive mode (zero camera permission prompts)
+// Browser-based tracking via browser_tracker.js (client-side MediaPipe WebGL)
 // ============================================================================
-let gazeSource = 'mouse'; // 'mouse' (interactive web demo) or 'webcam' (local Python tracker)
+let gazeSource = 'webcam'; // 'webcam' (browser MediaPipe) or 'mouse' (click/touch)
 let gazeStreamEventSource = null;
 let lastGazeCard = null;
-let hudVisible = false;
+let hudVisible = true;
 
 // Adaptive Gaze Stabilization Filter
 let smoothX = window.innerWidth / 2;
@@ -307,30 +307,34 @@ async function recenterGaze() {
 }
 
 function toggleGazeSource() {
-  gazeSource = (gazeSource === 'mouse') ? 'webcam' : 'mouse';
+  gazeSource = (gazeSource === 'webcam') ? 'mouse' : 'webcam';
   const btn = document.getElementById('gaze-mode-btn');
   const hud = document.getElementById('camera-hud');
-  const reticle = document.getElementById('gaze-reticle');
-  
+
   if (gazeSource === 'webcam') {
     if (btn) {
       btn.textContent = '👁️ Gaze: WEBCAM LIVE';
       btn.classList.add('active-gaze');
     }
     if (hud) hud.style.display = 'block';
-    initGazeStream();
-    showToast("Connecting to Local MediaPipe Webcam Tracker...");
+    if (window.initBrowserTracker) {
+      window.initBrowserTracker();
+    } else {
+      initGazeStream();
+    }
+    showToast("Starting Browser MediaPipe Eye Tracking…");
   } else {
+    if (window.stopBrowserTracker) window.stopBrowserTracker();
     if (gazeStreamEventSource) {
       gazeStreamEventSource.close();
       gazeStreamEventSource = null;
     }
     if (btn) {
-      btn.textContent = '🖱️ Gaze: INTERACTIVE (DWELL)';
+      btn.textContent = '🖱️ Gaze: CLICK / TOUCH';
       btn.classList.remove('active-gaze');
     }
     if (hud) hud.style.display = 'none';
-    showToast("Switched to Website-Friendly Interactive Mode");
+    showToast("Switched to Click / Touch Mode");
   }
 }
 
@@ -342,7 +346,24 @@ function toggleHudVisibility() {
   }
 }
 
-// Global mouse/pointer tracking for smooth website-friendly eye-cursor simulation
+async function recenterGaze() {
+  if (window.recenterBrowserGaze && window.isBrowserTrackerRunning && window.isBrowserTrackerRunning()) {
+    window.recenterBrowserGaze();
+    return;
+  }
+  try {
+    const res = await fetch('/api/recenter-gaze', { method: 'POST' });
+    if (res.ok) {
+      showToast("🎯 Gaze position centered to screen!");
+    } else {
+      showToast("Look straight at screen to center");
+    }
+  } catch (err) {
+    console.error("Recenter error:", err);
+  }
+}
+
+// Global mouse/pointer tracking for click/touch fallback mode
 window.addEventListener('mousemove', (e) => {
   if (gazeSource !== 'mouse') return;
   const reticle = document.getElementById('gaze-reticle');
@@ -367,14 +388,22 @@ window.addEventListener('touchmove', (e) => {
 // Initialization
 // ============================================================================
 document.addEventListener('DOMContentLoaded', () => {
+  document.body.setAttribute('data-gaze', 'webcam');
   loadData();
   setupKeyboardNavigation();
   initSpeech();
-  
-  if (gazeSource === 'webcam') {
-    initGazeStream();
-  }
-  
+
+  // If browser_tracker isn't loaded (e.g. offline), fallback to server stream if local
+  setTimeout(() => {
+    if (gazeSource === 'webcam' && (!window.isBrowserTrackerRunning || !window.isBrowserTrackerRunning())) {
+      if (window.initBrowserTracker) {
+        window.initBrowserTracker();
+      } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        initGazeStream();
+      }
+    }
+  }, 300);
+
   // Speak button
   document.getElementById('speak-btn').addEventListener('click', () => {
     if (currentMessage) speakText(currentMessage);
