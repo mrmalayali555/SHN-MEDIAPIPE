@@ -95,13 +95,24 @@
     },
     {
       "id": "isl_sign_language",
-      "name": "👁️ Sign Language to Speech",
-      "subtitle": "Express through your eyes. Speak through your language.",
+      "name": "👁️ Eye-to-Speech (ISL)",
+      "subtitle": "Express through your eyes. Look to choose ISL expressions.",
       "icon": "🤟",
       "color": "#8b5cf6",
       "description": "Express through your eyes. Speak through your language.",
       "is_isl": true,
-      "badge": "CORE FEATURE",
+      "badge": "EYE CONTROL",
+      "options": []
+    },
+    {
+      "id": "sign_to_speech",
+      "name": "🤟 Sign Language to Speech",
+      "subtitle": "Sign naturally. Let EyeVoice speak.",
+      "icon": "🤟",
+      "color": "#10b981",
+      "description": "Communicate with anyone, even if they don't understand sign language. EyeVoice recognizes your signs and converts their meaning into natural spoken language.",
+      "is_sign_to_speech": true,
+      "badge": "NEW FEATURE",
       "options": []
     },
     {
