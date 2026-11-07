@@ -34,6 +34,7 @@ RIGHT_CONTOUR = [362, 385, 387, 263, 373, 380]
 
 ACCENT_BGR = (240, 201, 76)     # theme.ACCENT in BGR
 GOOD_BGR = (151, 220, 61)       # theme.GOOD in BGR
+WARN_BGR = (84, 180, 255)       # theme.WARN in BGR
 
 
 # ------------------------------------------------------------ smoothing ---
@@ -56,8 +57,10 @@ class _OneEuro:
 
     def __call__(self, x: float, t: float) -> float:
         if self._t is None or self._x is None:
-            self._x, self._t = x, t
+            self._x, self._t, self._dx = x, t, 0.0
             return x
+        if self._dx is None:
+            self._dx = 0.0
         dt = max(1e-3, t - self._t)
         dx = (x - self._x) / dt
         a_d = self._alpha(self.d_cutoff, dt)
@@ -69,7 +72,11 @@ class _OneEuro:
         return self._x
 
     def reset(self) -> None:
-        self._x = self._dx = self._t = None
+        # _dx must be a number again: after a face loss the next sample would
+        # otherwise crash with "float * NoneType" and kill the tracker thread.
+        self._x = None
+        self._t = None
+        self._dx = 0.0
 
 
 # -------------------------------------------------------------- samples ---
@@ -90,16 +97,23 @@ class GazeTracker(threading.Thread):
     """Captures frames, runs FaceLandmarker and publishes gaze samples."""
 
     def __init__(self, camera: int = 0, frame_size: tuple[int, int] = (640, 480),
-                 preview_width: int = 260, model_path: Path = MODEL_PATH) -> None:
+                 preview_width: int = 244, model_path: Path = MODEL_PATH,
+                 preview_interval: float = 0.15) -> None:
         super().__init__(daemon=True, name="gaze-tracker")
         self.camera = camera
         self.frame_size = frame_size
         self.preview_width = preview_width
         self.model_path = model_path
+        self.preview_interval = preview_interval
+        self.active_camera: int | None = None   # index that actually opened
+        self.frames_seen = 0                    # frames read since start
         self._lock = threading.Lock()
         self._latest: GazeFrame | None = None
-        self._stop = threading.Event()
+        # NB: must NOT be called `_stop` - that shadows Thread._stop() and
+        # makes Thread.join() raise "TypeError: 'Event' object is not callable".
+        self._stop_event = threading.Event()
         self.error: str | None = None
+        self._preview_at = 0.0
 
         # blink detection state
         self._ear_baseline = 0.0
@@ -116,7 +130,30 @@ class GazeTracker(threading.Thread):
             return self._latest
 
     def stop(self) -> None:
-        self._stop.set()
+        self._stop_event.set()
+
+    # ------------------------------------------------------------- camera --
+    def _open_camera(self) -> tuple[cv2.VideoCapture | None, int]:
+        """Try the requested index first, then the other common ones.
+
+        A camera can be missing, busy or exposed under another index, so we
+        probe 0-2 and require a real frame before accepting it.
+        """
+        wanted = self.camera
+        candidates = [wanted] + [i for i in (0, 1, 2) if i != wanted]
+        for idx in candidates:
+            for backend in (cv2.CAP_V4L2, cv2.CAP_ANY):
+                cap = cv2.VideoCapture(idx, backend)
+                if not cap.isOpened():
+                    cap.release()
+                    continue
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.frame_size[0])
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.frame_size[1])
+                ok, frame = cap.read()
+                if ok and frame is not None and frame.size:
+                    return cap, idx
+                cap.release()
+        return None, wanted
 
     # ------------------------------------------------------------- worker --
     def run(self) -> None:  # noqa: C901 - linear pipeline, kept readable
@@ -124,13 +161,12 @@ class GazeTracker(threading.Thread):
         from mediapipe.tasks.python import vision
         from mediapipe.tasks.python.core import base_options as bo
 
-        cap = cv2.VideoCapture(self.camera, cv2.CAP_V4L2)
-        if not cap.isOpened():
-            cap = cv2.VideoCapture(self.camera)
-        if not cap.isOpened():
-            self.error = f"Cannot open camera {self.camera}"
+        cap, cam_idx = self._open_camera()
+        if cap is None:
+            self.error = f"Cannot open camera {self.camera} (or 0-2)"
             self._publish(GazeFrame(t=time.time(), found=False))
             return
+        self.active_camera = cam_idx
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.frame_size[0])
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.frame_size[1])
 
@@ -140,8 +176,8 @@ class GazeTracker(threading.Thread):
                     base_options=bo.BaseOptions(model_asset_path=str(self.model_path)),
                     running_mode=vision.RunningMode.VIDEO,
                     num_faces=1,
-                    min_face_detection_confidence=0.5,
-                    min_tracking_confidence=0.5,
+                    min_face_detection_confidence=0.4,
+                    min_tracking_confidence=0.4,
                 )
             )
         except Exception as exc:  # model missing / unreadable
@@ -150,57 +186,68 @@ class GazeTracker(threading.Thread):
             self._publish(GazeFrame(t=time.time(), found=False))
             return
 
-        last_ts = 0
-        frame_i = 0
-        fps_ema = 0.0
-        infer_start = time.perf_counter()
+        self._last_ts = 0
+        self._frame_i = 0
+        self._fps_ema = 0.0
+        self._infer_start = time.perf_counter()
 
-        while not self._stop.is_set():
+        while not self._stop_event.is_set():
             ok, frame = cap.read()
             if not ok or frame is None:
                 time.sleep(0.05)
                 continue
             frame = cv2.flip(frame, 1)  # mirror: feels natural for aiming
-            h, w = frame.shape[:2]
-
-            now = time.perf_counter()
-            ts_ms = max(last_ts + 1, int(now * 1000))
-            last_ts = ts_ms
-
-            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            results = landmarker.detect_for_video(
-                mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb), ts_ms
-            )
-
-            sample = GazeFrame(t=time.time())
-            pts = results.face_landmarks[0] if results.face_landmarks else None
-            if pts is not None:
-                u, v = self._gaze_vector(pts)
-                t = time.time()
-                sample.found = True
-                sample.u = self._fx(u, t)
-                sample.v = self._fy(v, t)
-                sample.ear = self._ear(pts)
-                sample.blink = self._update_blink(sample.ear, t)
-                frame_i += 1
-                if frame_i % 4 == 0:
-                    sample.preview = self._preview(frame, pts)
-            else:
-                self._fx.reset()
-                self._fy.reset()
-                self._closed_frames = 0
-                self._armed = False
-
-            dt = now - infer_start
-            infer_start = now
-            if dt > 0:
-                inst = 1.0 / dt
-                fps_ema = inst if fps_ema == 0 else 0.9 * fps_ema + 0.1 * inst
-            sample.fps = fps_ema
-            self._publish(sample)
+            self.frames_seen += 1
+            try:
+                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+                self._process(frame, image, landmarker)
+            except Exception as exc:  # never die silently: show it in the UI
+                self.error = f"Tracking error: {exc}"
+                self._publish(GazeFrame(t=time.time(), found=False))
+                break
 
         cap.release()
         landmarker.close()
+
+    def _process(self, frame: np.ndarray, image, landmarker) -> None:
+        """Detect a face in one frame, derive gaze + preview, publish it."""
+        now = time.perf_counter()
+        ts_ms = max(self._last_ts + 1, int(now * 1000))
+        self._last_ts = ts_ms
+
+        results = landmarker.detect_for_video(image, ts_ms)
+
+        sample = GazeFrame(t=time.time())
+        pts = results.face_landmarks[0] if results.face_landmarks else None
+        if pts is not None:
+            u, v = self._gaze_vector(pts)
+            t = time.time()
+            sample.found = True
+            sample.u = self._fx(u, t)
+            sample.v = self._fy(v, t)
+            sample.ear = self._ear(pts)
+            sample.blink = self._update_blink(sample.ear, t)
+            self._frame_i += 1
+        else:
+            self._fx.reset()
+            self._fy.reset()
+            self._closed_frames = 0
+            self._armed = False
+
+        # Preview is published whether or not a face is in frame, so the
+        # user can always see what the camera sees (and position themself).
+        if now - self._preview_at >= self.preview_interval:
+            self._preview_at = now
+            sample.preview = self._preview(frame, pts)
+
+        dt = now - self._infer_start
+        self._infer_start = now
+        if dt > 0:
+            inst = 1.0 / dt
+            self._fps_ema = inst if self._fps_ema == 0 else 0.9 * self._fps_ema + 0.1 * inst
+        sample.fps = self._fps_ema
+        self._publish(sample)
 
     # ------------------------------------------------------------ geometry --
     @staticmethod
@@ -275,22 +322,48 @@ class GazeTracker(threading.Thread):
 
     # ------------------------------------------------------------- preview --
     def _preview(self, frame: np.ndarray, pts) -> bytes | None:
+        """Thumbnail of the live frame, drawn with or without a face.
+
+        Published on every throttle tick so the panel always shows the real
+        camera output - a blank preview is what makes people think the
+        camera is dead.
+        """
         h, w = frame.shape[:2]
         scale = self.preview_width / w
-        vis = cv2.resize(frame, (self.preview_width, int(h * scale)))
+        vis = cv2.resize(frame, (self.preview_width, max(1, int(h * scale))))
 
-        def pix(idx: int) -> tuple[int, int]:
-            p = pts[idx]
-            return int(p.x * vis.shape[1]), int(p.y * vis.shape[0])
+        if pts is None:
+            colour = WARN_BGR
+            banner = "NO FACE - look at the camera"
+        else:
+            colour = GOOD_BGR
+            banner = "FACE OK"
 
-        for contour in (LEFT_CONTOUR, RIGHT_CONTOUR):
-            poly = np.array([pix(i) for i in contour], dtype=np.int32)
-            cv2.polylines(vis, [poly], True, ACCENT_BGR, 1, cv2.LINE_AA)
-        for eye in (LEFT_EYE, RIGHT_EYE):
-            c = pix(eye["iris"][0])
-            cv2.circle(vis, c, 4, GOOD_BGR, -1, cv2.LINE_AA)
+            def pix(idx: int) -> tuple[int, int]:
+                p = pts[idx]
+                return int(p.x * vis.shape[1]), int(p.y * vis.shape[0])
+
+            # face box, so it is obvious detection is live
+            xs = [p.x for p in pts]
+            ys = [p.y for p in pts]
+            x0, x1 = int(min(xs) * vis.shape[1]), int(max(xs) * vis.shape[1])
+            y0, y1 = int(min(ys) * vis.shape[0]), int(max(ys) * vis.shape[0])
+            cv2.rectangle(vis, (x0, y0), (x1, y1), colour, 1)
+
+            for contour in (LEFT_CONTOUR, RIGHT_CONTOUR):
+                poly = np.array([pix(i) for i in contour], dtype=np.int32)
+                cv2.polylines(vis, [poly], True, ACCENT_BGR, 1, cv2.LINE_AA)
+            for eye in (LEFT_EYE, RIGHT_EYE):
+                c = pix(eye["iris"][0])
+                cv2.circle(vis, c, 4, GOOD_BGR, -1, cv2.LINE_AA)
+
+        # banner strip: keeps the status legible over any background
+        cv2.rectangle(vis, (0, vis.shape[0] - 16), (vis.shape[1], vis.shape[0]),
+                      (10, 14, 22), -1)
+        cv2.putText(vis, banner, (5, vis.shape[0] - 4),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.38, colour, 1, cv2.LINE_AA)
         cv2.rectangle(vis, (0, 0), (vis.shape[1] - 1, vis.shape[0] - 1),
-                      ACCENT_BGR, 1)
+                      colour, 1)
         # PNG: Tk's photo image handles it everywhere (JPEG support varies)
         ok, buf = cv2.imencode(".png", vis, [cv2.IMWRITE_PNG_COMPRESSION, 3])
         return buf.tobytes() if ok else None

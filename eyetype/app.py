@@ -146,6 +146,7 @@ class EyeTypeApp:
         self.auto_centre: tuple[float, float] = (0.0, 0.0)
         self.centre_samples: list[tuple[float, float]] = []
         self.mouse_pos: tuple[float, float] | None = None
+        self._last_fed = 0.0            # timestamp of last calibration sample
         self._last_preview: bytes | None = None
         self._last_preview_at = 0.0
         self._photo = None
@@ -361,7 +362,9 @@ class EyeTypeApp:
             return
         self.cal_session.start()
         self.overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
-        self.overlay.lift()
+        # NB: Canvas overrides Tk's `raise` subcommand, so widget.lift() with no
+        # args raises TclError here - call the window command directly instead.
+        self.overlay.tk.call("raise", self.overlay._w)
         self._draw_calibration_overlay()
         self.toast("Calibration: follow the dot with your eyes", color=theme.ACCENT)
         self._update_chips()
@@ -390,6 +393,20 @@ class EyeTypeApp:
             c.create_text(w / 2, 104,
                           text="No face detected - look straight at the camera",
                           font=theme.FONT_BODY, fill=theme.WARN)
+
+        # live camera thumbnail so you can still see / align yourself
+        # while the full-screen calibration overlay is up
+        if self._photo is not None:
+            pw = self._photo.width()
+            ph = self._photo.height()
+            x0, y0 = w - pw - 18, 16
+            c.create_rectangle(x0 - 2, y0 - 2, x0 + pw + 2, y0 + ph + 2,
+                               outline=theme.ACCENT_DIM, width=1, tags="cam")
+            c.create_image(x0, y0, image=self._photo, anchor="nw", tags="cam")
+            c.create_text(x0 + pw / 2, y0 + ph + 14,
+                          text="camera \u00b7 keep your face in frame",
+                          font=theme.FONT_SMALL, fill=theme.MUTED, tags="cam")
+
         point = self.cal_session.current_point
         if point:
             x, y = point[0] * w, point[1] * h
@@ -519,7 +536,11 @@ class EyeTypeApp:
 
         if self.cal_session.collecting:
             self._cal_face_ok = bool(sample and sample.found)
-            if sample and sample.found:
+            # feed once per *new* camera frame: polling at 60 Hz would count
+            # the same gaze sample several times and let stale samples from
+            # the previous point dominate the fit
+            if sample and sample.found and sample.t != self._last_fed:
+                self._last_fed = sample.t
                 self.cal_session.feed(sample.u, sample.v)
             self._draw_calibration_overlay()
             if self.cal_session.done:
@@ -644,10 +665,15 @@ class EyeTypeApp:
                                   visible=True)
 
     # ============================================================ preview ===
+    def _set_preview_status(self, text: str, color: str) -> None:
+        current = self.preview_label.cget("text")
+        if current != text or self.preview_label.cget("fg") != color:
+            self.preview_label.configure(text=text, fg=color)
+
     def _maybe_update_preview(self, sample: GazeFrame | None, now: float) -> None:
         if sample is None or not sample.preview:
             return
-        if sample.preview is self._last_preview or now - self._last_preview_at < 0.2:
+        if sample.preview is self._last_preview or now - self._last_preview_at < 0.15:
             return
         self._last_preview = sample.preview
         self._last_preview_at = now
@@ -657,10 +683,15 @@ class EyeTypeApp:
             return
         self._photo = photo
         self.preview_canvas.delete("img")
-        self.preview_canvas.create_image(0, 0, image=photo, anchor="nw", tags="img")
+        self.preview_canvas.create_image(
+            self.preview_canvas.winfo_width() / 2,
+            self.preview_canvas.winfo_height() / 2,
+            image=photo, anchor="center", tags="img")
         if not self.cal_session.collecting:
-            self.preview_label.configure(text="eyes detected \u25b8 live",
-                                         fg=theme.GOOD)
+            if sample.found:
+                self._set_preview_status("eyes detected \u25b8 live", theme.GOOD)
+            else:
+                self._set_preview_status("camera live \u00b7 no face yet", theme.WARN)
 
     # ============================================================= status ===
     def _update_chips(self) -> None:
@@ -686,18 +717,34 @@ class EyeTypeApp:
         if self.demo:
             self.chips["face"].configure(text="\u25cf DEMO", fg=theme.ACCENT)
             self.chips["fps"].configure(text="MOUSE GAZE", fg=theme.ACCENT)
+            self._set_preview_status("demo mode \u00b7 mouse gaze", theme.ACCENT)
         elif self.tracker and self.tracker.error:
             self.chips["face"].configure(text="\u25cf NO CAMERA", fg=theme.DANGER)
             self.chips["fps"].configure(text="-- FPS", fg=theme.MUTED)
-            self.preview_label.configure(text=self.tracker.error, fg=theme.DANGER)
+            self._set_preview_status(self.tracker.error, theme.DANGER)
         elif sample is not None:
             state = "\u25cf FACE OK" if sample.found else "\u25cf NO FACE"
             color = theme.GOOD if sample.found else theme.WARN
             self.chips["face"].configure(text=state, fg=color)
-            self.chips["fps"].configure(text=f"{sample.fps:.0f} FPS", fg=theme.MUTED)
-            if not sample.found and not self.cal_session.collecting:
-                self.preview_label.configure(text="look at the camera",
-                                             fg=theme.WARN)
+            cam = self.tracker.active_camera if self.tracker else None
+            fps = f"{sample.fps:.0f} FPS"
+            self.chips["fps"].configure(
+                text=f"{fps} \u00b7 CAM {cam}" if cam is not None else fps,
+                fg=theme.MUTED)
+            if not self.cal_session.collecting:
+                if self.tracker is not None and self.tracker.frames_seen == 0:
+                    self._set_preview_status("camera open \u00b7 waiting for frames\u2026",
+                                             theme.WARN)
+                elif sample.found:
+                    self._set_preview_status("eyes detected \u25b8 live", theme.GOOD)
+                else:
+                    self._set_preview_status("camera live \u00b7 look at the camera",
+                                             theme.WARN)
+        elif self.tracker is not None:
+            # tracker thread started but has not published a frame yet
+            self.chips["face"].configure(text="\u25cf STARTING", fg=theme.MUTED)
+            self.chips["fps"].configure(text="-- FPS", fg=theme.MUTED)
+            self._set_preview_status("starting camera\u2026", theme.MUTED)
         self._update_chips()
         self.root.after(400, self._update_status)
 
@@ -705,6 +752,7 @@ class EyeTypeApp:
     def quit(self) -> None:
         if self.tracker:
             self.tracker.stop()
+            self.tracker.join(timeout=1.5)   # let the worker release the camera
         self.root.destroy()
 
 
