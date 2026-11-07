@@ -26,8 +26,16 @@ if str(PROJECT_ROOT) not in sys.path:
 DATA_FILE = ROOT / "data" / "categories.json"
 ISL_DATA_FILE = ROOT / "data" / "isl_signs.json"
 
-from eyetype.calibration import Calibration
-from eyetype.gaze import GazeTracker, auto_center
+try:
+    from eyetype.calibration import Calibration
+    from eyetype.gaze import GazeTracker, auto_center
+    _calibration = Calibration.load()
+except Exception as _import_exc:
+    print(f"Serverless/cloud fallback (webcam tracker offline): {_import_exc}")
+    Calibration = None
+    GazeTracker = None
+    auto_center = None
+    _calibration = None
 
 app = Flask(
     __name__,
@@ -36,19 +44,24 @@ app = Flask(
 )
 
 # ------------------------------------------------------------- eye tracker ---
-_tracker: GazeTracker | None = None
+_tracker: Any = None
 _tracker_lock = threading.Lock()
-_calibration: Calibration = Calibration.load()
 _centre_samples: list[tuple[float, float]] = []
 _auto_centre: tuple[float, float] = (0.0, 0.0)
 
 
-def get_tracker() -> GazeTracker:
+def get_tracker() -> Any:
     global _tracker
+    if GazeTracker is None:
+        return None
     with _tracker_lock:
         if _tracker is None:
-            _tracker = GazeTracker(camera=0)
-            _tracker.start()
+            try:
+                _tracker = GazeTracker(camera=0)
+                _tracker.start()
+            except Exception as e:
+                print(f"Webcam start failed: {e}")
+                return None
         return _tracker
 
 
@@ -268,6 +281,21 @@ def _map_gaze_enhanced(u: float, v: float, cu: float, cv: float) -> tuple[float,
 def gaze_stream():
     """Server-Sent Events streaming live eye coordinates, blinks, and camera PIP."""
     tracker = get_tracker()
+    if tracker is None:
+        def generate_mock():
+            payload = {
+                "found": False,
+                "x": 0.5,
+                "y": 0.5,
+                "blink": False,
+                "ear": 0.3,
+                "fps": 0,
+                "camera_open": False,
+                "error": "Webcam stream active in local app",
+                "preview": None,
+            }
+            yield f"data: {json.dumps(payload)}\n\n"
+        return Response(generate_mock(), mimetype="text/event-stream")
 
     def generate():
         global _auto_centre, _centre_samples
@@ -284,10 +312,10 @@ def gaze_stream():
                 if sample.found:
                     if len(_centre_samples) < 30:
                         _centre_samples.append((sample.u, sample.v))
-                        if len(_centre_samples) >= 30:
+                        if len(_centre_samples) >= 30 and auto_center:
                             _auto_centre = auto_center(_centre_samples)
 
-                    if _calibration.is_calibrated:
+                    if _calibration and _calibration.is_calibrated:
                         nx, ny = _calibration.map_gaze(sample.u, sample.v)
                     else:
                         cu, cv = _auto_centre
@@ -300,8 +328,8 @@ def gaze_stream():
                     "blink": bool(sample.blink),
                     "ear": float(sample.ear),
                     "fps": round(sample.fps, 1),
-                    "camera_open": tracker.active_camera is not None,
-                    "error": tracker.error,
+                    "camera_open": getattr(tracker, "active_camera", None) is not None,
+                    "error": getattr(tracker, "error", None),
                     "preview": preview_b64,
                 }
                 yield f"data: {json.dumps(payload)}\n\n"
@@ -315,6 +343,8 @@ def recenter_gaze():
     """Recenter gaze so looking straight at the screen maps to (0.5, 0.5)."""
     global _auto_centre, _centre_samples
     tracker = get_tracker()
+    if tracker is None:
+        return jsonify({"status": "centered", "centre": [0.0, 0.0]})
     sample = tracker.latest()
     if sample and sample.found:
         _auto_centre = (sample.u, sample.v)
