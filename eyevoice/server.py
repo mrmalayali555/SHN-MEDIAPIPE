@@ -31,25 +31,10 @@ if str(ROOT) not in sys.path:
 DATA_FILE = ROOT / "data" / "categories.json"
 ISL_DATA_FILE = ROOT / "data" / "isl_signs.json"
 
-# In serverless/cloud environments (e.g. Vercel), local webcam drivers are not present
-IS_VERCEL = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
-
-if IS_VERCEL:
-    Calibration = None
-    GazeTracker = None
-    auto_center = None
-    _calibration = None
-else:
-    try:
-        from eyetype.calibration import Calibration
-        from eyetype.gaze import GazeTracker, auto_center
-        _calibration = Calibration.load()
-    except Exception as _import_exc:
-        print(f"Local webcam tracker fallback: {_import_exc}")
-        Calibration = None
-        GazeTracker = None
-        auto_center = None
-        _calibration = None
+Calibration: Any = None
+GazeTracker: Any = None
+auto_center: Any = None
+_calibration: Any = None
 
 app = Flask(
     __name__,
@@ -69,16 +54,20 @@ _auto_centre: tuple[float, float] = (0.0, 0.0)
 
 
 def get_tracker() -> Any:
-    global _tracker
-    if GazeTracker is None:
-        return None
+    global _tracker, Calibration, GazeTracker, auto_center, _calibration
     with _tracker_lock:
         if _tracker is None:
             try:
+                from eyetype.calibration import Calibration as _Calib
+                from eyetype.gaze import GazeTracker as _Gaze, auto_center as _AutoC
+                Calibration = _Calib
+                GazeTracker = _Gaze
+                auto_center = _AutoC
+                _calibration = Calibration.load()
                 _tracker = GazeTracker(camera=0)
                 _tracker.start()
             except Exception as e:
-                print(f"Webcam start failed: {e}")
+                print(f"Webcam tracker offline / serverless cloud mode: {e}")
                 return None
         return _tracker
 
