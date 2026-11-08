@@ -655,6 +655,13 @@ function renderView() {
     breadcrumbSep.style.display = 'none';
     if (persistentBack) persistentBack.classList.add('hidden');
     renderHomeView(content);
+  } else if (currentView === 'sign_to_speech' || (currentCategory && currentCategory.id === 'sign_to_speech')) {
+    homeBtn.classList.remove('active');
+    breadcrumbCurrent.style.display = 'inline-block';
+    breadcrumbSep.style.display = 'inline-block';
+    breadcrumbCurrent.textContent = '🤟 Sign Language to Speech';
+    if (persistentBack) persistentBack.classList.remove('hidden');
+    renderSignToSpeechView(content);
   } else if (currentView === 'isl_sign_language' || (currentCategory && currentCategory.id === 'isl_sign_language')) {
     homeBtn.classList.remove('active');
     breadcrumbCurrent.style.display = 'inline-block';
@@ -679,14 +686,15 @@ function renderHomeView(container) {
   const html = `
     <div class="cards-grid">
       ${appData.categories.map((cat, idx) => `
-        <div class="card ${cat.is_external ? 'keyboard-card' : ''} ${cat.is_isl ? 'isl-feature-card' : ''}" 
+        <div class="card ${cat.is_external ? 'keyboard-card' : ''} ${cat.is_isl ? 'isl-feature-card' : ''} ${cat.is_sign_to_speech ? 'sign-to-speech-card' : ''}" 
              data-index="${idx}"
              onmouseenter="startDwell(this)"
              onmouseleave="cancelDwell(this)"
              onclick="selectCategory('${cat.id}')">
           <div class="dwell-progress-bar"></div>
           ${cat.is_external ? '<span class="card-badge">TEAMMATE FEATURE</span>' : ''}
-          ${cat.is_isl ? '<span class="card-badge isl-badge">⭐ MAJOR NEW FEATURE</span>' : ''}
+          ${cat.is_isl ? '<span class="card-badge isl-badge">👁️ EYE CONTROL BOARD</span>' : ''}
+          ${cat.is_sign_to_speech ? '<span class="card-badge" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;">🤟 NEW INTERPRETER</span>' : ''}
           <div class="card-icon">${cat.icon}</div>
           <div class="card-title">${cat.name}</div>
           <div class="card-desc">${cat.description || ''}</div>
@@ -762,6 +770,19 @@ function renderCategoryView(container) {
 function selectCategory(catId) {
   if (catId === 'keyboard') {
     openKeyboardModal();
+    return;
+  }
+  if (catId === 'sign_to_speech') {
+    const cat = appData.categories.find(c => c.id === catId) || {
+      id: 'sign_to_speech',
+      name: '🤟 Sign Language to Speech',
+      icon: '🤟'
+    };
+    currentCategory = cat;
+    currentView = 'sign_to_speech';
+    focusedIndex = 0;
+    renderView();
+    showToast("Opened Sign Language Interpreter");
     return;
   }
   if (catId === 'isl_sign_language') {
@@ -1514,6 +1535,9 @@ function confirmAndSpeakISLFromModal() {
 }
 
 function goHome() {
+  if (currentView === 'sign_to_speech') {
+    exitSignToSpeechMode();
+  }
   cancelDwell();
   lastGazeCard = null;
   lookLeftStartTime = 0;
@@ -1946,3 +1970,524 @@ function showToast(msg) {
   }, 2500);
 }
 
+
+
+// ============================================================================
+// Sign Language to Speech (Webcam ISL Recognition & Translation)
+// ============================================================================
+
+let signRecognizerInstance = null;
+let signVocabData = [];
+let currentSignSentence = '';
+let currentSignMalayalam = '';
+let signConversationHistory = [];
+let autoSpeakEnabled = false;
+let autoSpeakTimer = null;
+let signStatusCallbackAttached = false;
+
+/**
+ * Load verified ISL vocabulary from server API
+ */
+async function loadSignVocabulary() {
+  if (signVocabData.length > 0) return signVocabData;
+  try {
+    const res = await fetch('/api/sign-vocabulary');
+    if (res.ok) {
+      const data = await res.json();
+      signVocabData = data.signs || [];
+      if (window.SignRecognizer) {
+        signRecognizerInstance = new window.SignRecognizer(signVocabData);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load sign vocabulary:', err);
+  }
+  return signVocabData;
+}
+
+/**
+ * Render the dedicated Sign Language to Speech Interpreter Interface
+ */
+async function renderSignToSpeechView(container) {
+  // Ensure vocabulary is loaded
+  await loadSignVocabulary();
+
+  const vocab = signVocabData || [];
+
+  container.innerHTML = `
+    <div class="category-header-banner" style="border-color:#10b981;">
+      <div class="cat-banner-info">
+        <h2>
+          <span>🤟</span> Sign Language to Speech (ISL Interpreter)
+          <span class="sign-mode-badge">⚡ LIVE MEDIAPIPE</span>
+        </h2>
+        <p>Sign naturally with your hands and expressions. EyeVoice recognizes your signs and speaks for you.</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span id="sign-main-status" class="sign-cam-status inactive">● Camera Idle</span>
+        <button class="btn-back" onclick="goHome()">⬅ Back to Dashboard</button>
+      </div>
+    </div>
+
+    <div class="sign-page-layout">
+      <!-- LEFT COLUMN: Live Camera & Vision Viewport -->
+      <div class="sign-camera-panel">
+        <div class="sign-camera-header">
+          <h3>📹 Live Camera &amp; Hand Mesh</h3>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span id="sign-fps" class="sign-fps-overlay" style="position:static;">-- FPS</span>
+            <span id="sign-status-pill" class="sign-cam-status inactive">Offline</span>
+          </div>
+        </div>
+
+        <div class="sign-camera-viewport">
+          <canvas id="sign-canvas" width="640" height="480"></canvas>
+          <div id="sign-camera-placeholder" class="sign-camera-placeholder" style="position:absolute;">
+            <span class="placeholder-icon sign-waiting-pulse">🤟</span>
+            <p>Click <strong>Start Camera</strong> below to enable MediaPipe Hand Tracking</p>
+            <p style="font-size:0.8rem;color:var(--text-dim);margin-top:6px;">Runs 100% locally in your browser</p>
+          </div>
+          <div id="sign-hands-indicator" class="sign-hands-indicator">
+            <span id="sign-hand-left-chip" class="sign-hand-chip left" style="display:none;">Left Hand</span>
+            <span id="sign-hand-right-chip" class="sign-hand-chip right" style="display:none;">Right Hand</span>
+          </div>
+        </div>
+
+        <div class="sign-cam-controls">
+          <button id="btn-start-sign-cam" class="btn-cam btn-cam-start" onclick="startSignCamera()">
+            ▶ Start Camera
+          </button>
+          <button id="btn-stop-sign-cam" class="btn-cam btn-cam-stop" onclick="stopSignCamera()" style="display:none;">
+            ⏹ Stop Camera
+          </button>
+          <span id="sign-cam-msg" style="font-size:0.8rem;color:var(--text-muted);align-self:center;margin-left:auto;">
+            Ready
+          </span>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Recognition, Translation & Speech -->
+      <div class="sign-recognition-panel">
+        <!-- Section 1: Real-time Sign Candidate -->
+        <div class="sign-section">
+          <div class="sign-section-header">
+            <span>⚡ Detected Sign (Hold to Confirm)</span>
+            <span id="sign-detect-conf" class="sign-confidence-badge low" style="margin-left:auto;">0% Match</span>
+          </div>
+          <div class="sign-section-body" style="padding:10px 14px;">
+            <div class="sign-detected-display" style="padding:8px;">
+              <span id="sign-detect-icon" class="sign-detected-icon">👋</span>
+              <div id="sign-detect-gloss" class="sign-detected-gloss">Ready to Sign</div>
+              <div id="sign-detect-meaning" class="sign-detected-meaning">Position hands in front of camera</div>
+              
+              <div class="sign-hold-bar">
+                <div id="sign-detect-hold-fill" class="sign-hold-bar-fill"></div>
+              </div>
+              <div id="sign-hold-hint" style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">Hold steady for ~0.4s to confirm sign</div>
+
+              <div id="sign-finger-chips" class="finger-state-grid">
+                <span class="finger-chip" id="chip-thumb">Thumb</span>
+                <span class="finger-chip" id="chip-index">Index</span>
+                <span class="finger-chip" id="chip-middle">Middle</span>
+                <span class="finger-chip" id="chip-ring">Ring</span>
+                <span class="finger-chip" id="chip-pinky">Pinky</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Recognized Sign Sequence -->
+        <div class="sign-section">
+          <div class="sign-section-header">
+            <span>🧩 Signed Sequence</span>
+            <button class="btn-perm-back" style="margin-left:auto;padding:2px 8px;font-size:0.75rem;" onclick="clearSignSequence()">
+              🧹 Clear
+            </button>
+          </div>
+          <div class="sign-section-body" style="padding:10px 14px;">
+            <div id="sign-sequence-chips" style="display:flex;flex-wrap:wrap;gap:6px;min-height:32px;align-items:center;">
+              <span style="color:var(--text-dim);font-size:0.85rem;font-style:italic;">No signs confirmed yet — perform a gesture</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Live Translated Spoken Output -->
+        <div class="sign-section" style="border-color:#10b981;">
+          <div class="sign-section-header" style="background:rgba(16,185,129,0.1);">
+            <span>🗣️ Spoken Translation</span>
+            <label class="sign-auto-speak-toggle" style="margin-left:auto;">
+              <input type="checkbox" id="sign-autospeak-toggle" onchange="toggleAutoSpeak(this.checked)" ${autoSpeakEnabled ? 'checked' : ''}>
+              ⚡ Auto-Speak
+            </label>
+          </div>
+          <div class="sign-section-body">
+            <div class="sign-translation-area">
+              <div id="sign-translated-text" class="sign-translated-sentence">"Awaiting sign input..."</div>
+              <div id="sign-malayalam-text" style="color:#10b981;font-size:0.95rem;margin-top:4px;font-weight:600;"></div>
+            </div>
+
+            <div class="sign-speech-controls" style="padding:8px 0 0 0;">
+              <button id="btn-sign-speak" class="btn-sign-action btn-sign-speak" onclick="speakSignSentence()" disabled>
+                🔊 Speak Sentence
+              </button>
+              <button class="btn-sign-action btn-sign-clear" onclick="replaySignSentence()">
+                🔁 Replay
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: Live Conversation History -->
+        <div class="sign-section">
+          <div class="sign-section-header">
+            <span>💬 Conversation History</span>
+            <span style="font-size:0.75rem;color:var(--text-dim);margin-left:auto;">Signs &amp; Translations</span>
+          </div>
+          <div class="sign-section-body" style="padding:10px;">
+            <div id="sign-history-list" class="sign-history-list">
+              ${signConversationHistory.length === 0 ? '<div class="sign-history-empty">Spoken sentences will appear here in chronological order.</div>' : signConversationHistory.map(item => `
+                <div class="sign-history-item">
+                  <div class="sign-history-avatar">${item.icon || '🤟'}</div>
+                  <div class="sign-history-content">
+                    <div class="sign-history-text">${item.text}</div>
+                    <div class="sign-history-meta">ISL Glosses: [${item.glosses}] • ${item.time}</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 5: Verified ISL Signs Reference Guide (Collapsible) -->
+        <details class="sign-section" style="cursor:pointer;">
+          <summary class="sign-section-header">
+            <span>📖 Verified ISL Vocabulary Guide (${vocab.length} Signs)</span>
+            <span style="font-size:0.75rem;color:var(--accent);margin-left:auto;">Click to Expand</span>
+          </summary>
+          <div class="sign-section-body" style="padding:10px;max-height:220px;overflow-y:auto;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:8px;">
+              ${vocab.map(s => `
+                <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:6px;padding:8px;">
+                  <div style="font-weight:700;color:var(--text);font-size:0.85rem;">${s.gloss}</div>
+                  <div style="color:var(--accent);font-size:0.8rem;margin-top:2px;">${s.meaning_en}</div>
+                  <div style="color:var(--text-dim);font-size:0.72rem;margin-top:4px;">Handshape: ${s.parameters ? s.parameters.handshape : ''}</div>
+                  <div style="color:#10b981;font-size:0.7rem;margin-top:2px;">${s.islrtc_ref || 'ISLRTC'} • ${s.meaning_ml || ''}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+  `;
+
+  // Attach status listener if not already attached
+  if (!signStatusCallbackAttached) {
+    window.onSignTrackerStatus = (msg) => {
+      const msgEl = document.getElementById('sign-cam-msg');
+      if (msgEl) msgEl.textContent = msg;
+    };
+    signStatusCallbackAttached = true;
+  }
+}
+
+/**
+ * Start MediaPipe Sign Tracker camera and loop
+ */
+async function startSignCamera() {
+  const videoEl = document.getElementById('sign-tracker-video');
+  const canvasEl = document.getElementById('sign-canvas');
+  const placeholderEl = document.getElementById('sign-camera-placeholder');
+  const startBtn = document.getElementById('btn-start-sign-cam');
+  const stopBtn = document.getElementById('btn-stop-sign-cam');
+  const statusPill = document.getElementById('sign-status-pill');
+  const mainStatus = document.getElementById('sign-main-status');
+
+  if (!videoEl || !canvasEl) return;
+
+  if (placeholderEl) placeholderEl.style.display = 'none';
+  if (startBtn) startBtn.style.display = 'none';
+  if (stopBtn) stopBtn.style.display = 'inline-flex';
+  if (statusPill) {
+    statusPill.className = 'sign-cam-status active';
+    statusPill.textContent = '● Tracking';
+  }
+  if (mainStatus) {
+    mainStatus.className = 'sign-cam-status active';
+    mainStatus.textContent = '● Tracking Active';
+  }
+
+  // Ensure recognizer instance exists
+  if (!signRecognizerInstance && window.SignRecognizer) {
+    signRecognizerInstance = new window.SignRecognizer(signVocabData);
+  }
+
+  // Init sign tracker
+  if (typeof window.initSignTracker === 'function') {
+    try {
+      await window.initSignTracker(videoEl, canvasEl, onSignTrackerFrame);
+      showToast("Webcam MediaPipe Vision active");
+    } catch (err) {
+      console.error('Failed to init sign tracker:', err);
+      showToast("Camera error: " + err.message);
+      stopSignCamera();
+    }
+  } else {
+    showToast("MediaPipe tracker module loading, please retry in 2s");
+  }
+}
+
+/**
+ * Stop MediaPipe Sign Tracker
+ */
+function stopSignCamera() {
+  const placeholderEl = document.getElementById('sign-camera-placeholder');
+  const startBtn = document.getElementById('btn-start-sign-cam');
+  const stopBtn = document.getElementById('btn-stop-sign-cam');
+  const statusPill = document.getElementById('sign-status-pill');
+  const mainStatus = document.getElementById('sign-main-status');
+
+  if (typeof window.stopSignTracker === 'function') {
+    window.stopSignTracker();
+  }
+
+  if (placeholderEl) placeholderEl.style.display = 'block';
+  if (startBtn) startBtn.style.display = 'inline-flex';
+  if (stopBtn) stopBtn.style.display = 'none';
+  if (statusPill) {
+    statusPill.className = 'sign-cam-status inactive';
+    statusPill.textContent = 'Offline';
+  }
+  if (mainStatus) {
+    mainStatus.className = 'sign-cam-status inactive';
+    mainStatus.textContent = '● Camera Idle';
+  }
+}
+
+/**
+ * Frame callback invoked by sign_tracker.js on every animation frame
+ */
+function onSignTrackerFrame(frameData) {
+  if (!signRecognizerInstance) return;
+
+  const result = signRecognizerInstance.processFrame(frameData);
+
+  // 1. Hands indicator chips
+  const leftChip = document.getElementById('sign-hand-left-chip');
+  const rightChip = document.getElementById('sign-hand-right-chip');
+  if (leftChip) leftChip.style.display = result.fingerStates.dominant ? 'inline-block' : 'none';
+  if (rightChip) rightChip.style.display = result.fingerStates.secondary ? 'inline-block' : 'none';
+
+  // 2. Finger state chips for dominant hand
+  if (result.fingerStates.dominant) {
+    const f = result.fingerStates.dominant;
+    updateFingerChip('chip-thumb', 'Thumb', f.thumb === 'extended');
+    updateFingerChip('chip-index', 'Index', f.index === 'extended');
+    updateFingerChip('chip-middle', 'Middle', f.middle === 'extended');
+    updateFingerChip('chip-ring', 'Ring', f.ring === 'extended');
+    updateFingerChip('chip-pinky', 'Pinky', f.pinky === 'extended');
+  }
+
+  // 3. Current candidate sign display
+  const iconEl = document.getElementById('sign-detect-icon');
+  const glossEl = document.getElementById('sign-detect-gloss');
+  const meaningEl = document.getElementById('sign-detect-meaning');
+  const confEl = document.getElementById('sign-detect-conf');
+  const holdFillEl = document.getElementById('sign-detect-hold-fill');
+
+  if (result.currentSign) {
+    if (glossEl) glossEl.textContent = result.currentSign.gloss;
+    if (meaningEl) meaningEl.textContent = result.currentSign.meaning_en;
+    if (confEl) {
+      confEl.textContent = result.currentSign.confidence + '% Match';
+      confEl.className = 'sign-confidence-badge ' + (result.currentSign.confidence > 70 ? 'high' : 'medium');
+    }
+    if (holdFillEl) {
+      holdFillEl.style.width = Math.round(result.holdProgress * 100) + '%';
+    }
+  } else {
+    if (holdFillEl) holdFillEl.style.width = '0%';
+    if (confEl && !result.confirmedSign) {
+      confEl.textContent = 'Scanning...';
+      confEl.className = 'sign-confidence-badge low';
+    }
+  }
+
+  // 4. Confirmed sign event
+  if (result.confirmedSign) {
+    onSignConfirmed(result.confirmedSign);
+  }
+}
+
+function updateFingerChip(id, label, isExtended) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (isExtended) {
+    el.className = 'finger-chip extended';
+    el.textContent = label + ' ↑';
+  } else {
+    el.className = 'finger-chip';
+    el.textContent = label + ' ·';
+  }
+}
+
+/**
+ * Handle a sign confirmed by temporal stability hold
+ */
+async function onSignConfirmed(sign) {
+  playClickChime();
+  showToast(`Sign Confirmed: ${sign.gloss}`);
+
+  // Update sign sequence chips in UI
+  const seqContainer = document.getElementById('sign-sequence-chips');
+  if (seqContainer) {
+    const sequence = signRecognizerInstance.getSignSequence();
+    seqContainer.innerHTML = sequence.map((s, idx) => `
+      <span style="background:var(--card-bg);border:1px solid #10b981;border-radius:99px;padding:4px 10px;font-size:0.8rem;color:#10b981;font-weight:700;display:inline-flex;align-items:center;gap:4px;">
+        <span>${idx + 1}.</span> ${s.id}
+      </span>
+    `).join(' <span style="color:var(--text-dim);">➔</span> ');
+  }
+
+  // Request natural translation
+  await translateSignSequence();
+
+  // Handle auto-speak
+  if (autoSpeakEnabled) {
+    if (autoSpeakTimer) clearTimeout(autoSpeakTimer);
+    autoSpeakTimer = setTimeout(() => {
+      speakSignSentence();
+    }, 1500); // 1.5s pause trigger
+  }
+}
+
+/**
+ * Send confirmed sign glosses to server for fluent natural language translation
+ */
+async function translateSignSequence() {
+  if (!signRecognizerInstance) return;
+  const sequence = signRecognizerInstance.getSignSequence();
+  if (sequence.length === 0) return;
+
+  const glosses = sequence.map(s => s.id);
+  let translatedText = '';
+  let malayalamText = sequence[sequence.length - 1].meaning_ml || '';
+
+  try {
+    const res = await fetch('/api/sign-translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ glosses: glosses })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      translatedText = data.sentence || '';
+    }
+  } catch (err) {
+    console.error('Translation error:', err);
+  }
+
+  // Fallback if server translation failed
+  if (!translatedText) {
+    translatedText = sequence.map(s => s.meaning_en).join(' ');
+  }
+
+  currentSignSentence = translatedText;
+  currentSignMalayalam = malayalamText;
+
+  // Update UI
+  const transEl = document.getElementById('sign-translated-text');
+  const malEl = document.getElementById('sign-malayalam-text');
+  const speakBtn = document.getElementById('btn-sign-speak');
+
+  if (transEl) transEl.textContent = `"${currentSignSentence}"`;
+  if (malEl) malEl.textContent = currentSignMalayalam ? `മലയാളം: ${currentSignMalayalam}` : '';
+  if (speakBtn) speakBtn.disabled = false;
+}
+
+/**
+ * Speak the translated sentence using TTS and record in history
+ */
+function speakSignSentence() {
+  if (!currentSignSentence) return;
+
+  speakText(currentSignSentence);
+  showToast(`Speaking: "${currentSignSentence}"`);
+
+  // Record in conversation history
+  const sequence = signRecognizerInstance ? signRecognizerInstance.getSignSequence() : [];
+  const glossStr = sequence.map(s => s.id).join(' ');
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  signConversationHistory.unshift({
+    icon: '🤟',
+    text: currentSignSentence,
+    glosses: glossStr || 'ISL Gesture',
+    time: timeStr
+  });
+
+  // Post to caregiver log as patient sign message
+  postMessageToServer(currentSignSentence, 'Sign Language (ISL Webcam)', false);
+
+  // Update history UI
+  const historyList = document.getElementById('sign-history-list');
+  if (historyList) {
+    historyList.innerHTML = signConversationHistory.map(item => `
+      <div class="sign-history-item">
+        <div class="sign-history-avatar">${item.icon}</div>
+        <div class="sign-history-content">
+          <div class="sign-history-text">${item.text}</div>
+          <div class="sign-history-meta">ISL Glosses: [${item.glosses}] • ${item.time}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+function replaySignSentence() {
+  if (currentSignSentence) {
+    speakText(currentSignSentence);
+    showToast(`Replaying: "${currentSignSentence}"`);
+  } else if (signConversationHistory.length > 0) {
+    const last = signConversationHistory[0];
+    speakText(last.text);
+    showToast(`Replaying: "${last.text}"`);
+  }
+}
+
+function clearSignSequence() {
+  if (signRecognizerInstance) {
+    signRecognizerInstance.clearSequence();
+  }
+  currentSignSentence = '';
+  currentSignMalayalam = '';
+
+  const seqContainer = document.getElementById('sign-sequence-chips');
+  const transEl = document.getElementById('sign-translated-text');
+  const malEl = document.getElementById('sign-malayalam-text');
+  const speakBtn = document.getElementById('btn-sign-speak');
+
+  if (seqContainer) seqContainer.innerHTML = '<span style="color:var(--text-dim);font-size:0.85rem;font-style:italic;">No signs confirmed yet</span>';
+  if (transEl) transEl.textContent = '"Awaiting sign input..."';
+  if (malEl) malEl.textContent = '';
+  if (speakBtn) speakBtn.disabled = true;
+
+  showToast("Cleared sign sequence");
+}
+
+function toggleAutoSpeak(enabled) {
+  autoSpeakEnabled = Boolean(enabled);
+  showToast(autoSpeakEnabled ? "Auto-speak enabled (1.5s pause trigger)" : "Auto-speak disabled (manual button)");
+}
+
+/**
+ * Clean up tracker and state when leaving Sign-to-Speech view
+ */
+function exitSignToSpeechMode() {
+  stopSignCamera();
+  if (autoSpeakTimer) {
+    clearTimeout(autoSpeakTimer);
+    autoSpeakTimer = null;
+  }
+}

@@ -140,6 +140,25 @@ def _load_isl_data() -> dict:
     return {"meta": {}, "categories": [], "signs": []}
 
 
+_memory_sign_vocab: dict | None = None
+
+
+def _load_sign_vocabulary() -> dict:
+    """Load the sign_vocabulary.json for the Sign-to-Speech webcam recognition feature."""
+    global _memory_sign_vocab
+    if _memory_sign_vocab is not None:
+        return _memory_sign_vocab
+    p = _find_file("data/sign_vocabulary.json")
+    if p and p.exists():
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                _memory_sign_vocab = json.load(f)
+                return _memory_sign_vocab
+        except Exception as e:
+            print(f"Error loading sign vocabulary: {e}")
+    return {"metadata": {}, "signs": []}
+
+
 # ------------------------------------------------------------- error handler ---
 @app.errorhandler(500)
 @app.errorhandler(Exception)
@@ -271,6 +290,53 @@ def interpret_isl_sequence():
     signs = payload.get("signs", [])
     result = interpret_sign_sequence(signs)
     return jsonify(result)
+
+
+# ---- Sign-to-Speech (Webcam ISL Recognition) API ----
+@app.route("/api/sign-vocabulary", methods=["GET"])
+def get_sign_vocabulary():
+    """Return the verified ISL sign vocabulary for webcam-based recognition."""
+    data = _load_sign_vocabulary()
+    return jsonify({
+        "metadata": data.get("metadata", {}),
+        "total": len(data.get("signs", [])),
+        "signs": data.get("signs", []),
+    })
+
+
+@app.route("/api/sign-translate", methods=["POST"])
+def sign_translate():
+    """Translate a sequence of recognized sign glosses into a natural English sentence.
+
+    Uses Gemini AI for natural-sounding translation with ISL grammar awareness,
+    falling back to a simple gloss join if the AI service is unavailable.
+    """
+    payload = request.get_json(force=True) or {}
+    glosses = payload.get("glosses", [])
+    if not glosses:
+        return jsonify({"sentence": "", "method": "empty"})
+
+    # Try Gemini for natural language generation
+    try:
+        from eyevoice.gemini_service import call_gemini
+        prompt = (
+            "You are an Indian Sign Language (ISL) interpreter. "
+            "ISL uses SOV (Subject-Object-Verb) word order, topic-comment structure, "
+            "and sentence-final negation/questions. "
+            "Given these recognized ISL sign glosses in sequence order, "
+            "translate them into a single natural, fluent English sentence. "
+            "Only output the translated sentence, nothing else.\n\n"
+            f"Sign glosses: {' → '.join(glosses)}"
+        )
+        result = call_gemini(prompt, json_mode=False, timeout=6)
+        if result and isinstance(result, str) and len(result.strip()) > 0:
+            return jsonify({"sentence": result.strip(), "method": "gemini"})
+    except Exception as e:
+        print(f"Gemini sign-translate fallback: {e}")
+
+    # Deterministic fallback: simple gloss-to-sentence
+    sentence = " ".join(g.replace("_", " ").title() for g in glosses) + "."
+    return jsonify({"sentence": sentence, "method": "fallback"})
 
 
 # ---- Gemini AI Open-Ended Communicator API ----
