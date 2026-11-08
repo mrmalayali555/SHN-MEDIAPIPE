@@ -16,7 +16,7 @@
     ],
     "license": "CC-BY-4.0 Open Assistive Lexicon",
     "verification_level": "ISLRTC Official & Research Verified",
-    "total_signs": 62
+    "total_signs": 72
   },
   "signs": [
     {
@@ -1935,6 +1935,226 @@
         },
         "relative_location": "chest",
         "min_hold_ms": 400
+      }
+    },
+    {
+      "id": "YOUR",
+      "gloss": "YOUR",
+      "meaning_en": "Your",
+      "meaning_ml": "നിങ്ങളുടെ",
+      "category": "pronouns",
+      "description": "Dominant open palm or index finger pointing directly forward towards interlocutor (Person B).",
+      "cultural_context": "Standard ISL second-person possessive pronoun. Used in questions like 'Your name what?'.",
+      "recognition_spec": {
+        "primary_hand": "dominant",
+        "finger_state": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "extended"
+        },
+        "hand_location": "chest",
+        "two_handed": false,
+        "min_hold_ms": 220
+      }
+    },
+    {
+      "id": "NAME",
+      "gloss": "NAME",
+      "meaning_en": "Name",
+      "meaning_ml": "പേര്",
+      "category": "social",
+      "description": "Dominant index and middle finger tapping temple or non-dominant index and middle fingers.",
+      "cultural_context": "National ISLRTC standard gesture for 'name'. Fundamental for introductions and identity.",
+      "recognition_spec": {
+        "primary_hand": "dominant",
+        "finger_state": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "hand_location": "face_or_contact",
+        "two_handed": false,
+        "min_hold_ms": 220
+      }
+    },
+    {
+      "id": "MY",
+      "gloss": "MY / MINE",
+      "meaning_en": "My / Mine",
+      "meaning_ml": "എന്റെ",
+      "category": "pronouns",
+      "description": "Dominant flat palm resting on center of chest.",
+      "cultural_context": "First-person possessive pronoun in Indian Sign Language.",
+      "recognition_spec": {
+        "primary_hand": "dominant",
+        "finger_state": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "extended"
+        },
+        "hand_location": "chest",
+        "two_handed": false,
+        "min_hold_ms": 220
+      }
+    },
+    {
+      "id": "WANT",
+      "gloss": "WANT / NEED",
+      "meaning_en": "Want / Need",
+      "meaning_ml": "വേണം",
+      "category": "needs",
+      "description": "Hands open palms facing upward, pulling inward towards body.",
+      "cultural_context": "High-frequency ISL verb for expressing desires, medication, food, or water needs.",
+      "recognition_spec": {
+        "primary_hand": "dominant",
+        "finger_state": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "extended"
+        },
+        "hand_location": "chest",
+        "two_handed": false,
+        "min_hold_ms": 220
+      }
+    },
+    {
+      "id": "CALL",
+      "gloss": "CALL / PHONE",
+      "meaning_en": "Call / Phone",
+      "meaning_ml": "വിളിക്കുക",
+      "category": "actions",
+      "description": "Thumb and pinky extended in 'Y' handshape near ear (phone), or hand waving inward.",
+      "cultural_context": "Widely used in healthcare and emergencies for 'Call Doctor' or 'Call Family'.",
+      "recognition_spec": {
+        "primary_hand": "dominant",
+        "finger_state": {
+          "thumb": "extended",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "extended"
+        },
+        "hand_location": "face",
+        "two_handed": false,
+        "min_hold_ms": 220
+      }
+    },
+    {
+      "id": "TIME",
+      "gloss": "TIME / CLOCK",
+      "meaning_en": "Time / Clock",
+      "meaning_ml": "സമയം",
+      "category": "time",
+      "description": "Dominant index finger tapping non-dominant wrist (watch position).",
+      "cultural_context": "Used in scheduling, taking medicine on time, and asking 'What time is it?'.",
+      "recognition_spec": {
+        "primary_hand": "dominant",
+        "finger_state": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "hand_location": "contact",
+        "two_handed": true,
+        "min_hold_ms": 220
+      }
+    },
+    {
+      "id": "WHEN",
+      "gloss": "WHEN?",
+      "meaning_en": "When?",
+      "meaning_ml": "എപ്പോൾ?",
+      "category": "questions",
+      "description": "Dominant index finger circling around non-dominant index finger.",
+      "cultural_context": "Essential interrogative sign in ISL questions.",
+      "recognition_spec": {
+        "primary_hand": "dominant",
+        "finger_state": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "hand_location": "chest",
+        "two_handed": true,
+        "min_hold_ms": 220
+      }
+    },
+    {
+      "id": "WHY",
+      "gloss": "WHY?",
+      "meaning_en": "Why?",
+      "meaning_ml": "എന്തുകൊണ്ട്?",
+      "category": "questions",
+      "description": "Dominant index finger touching forehead, pulling down into Y handshape.",
+      "cultural_context": "ISL interrogative sign for reasoning and inquiry.",
+      "recognition_spec": {
+        "primary_hand": "dominant",
+        "finger_state": {
+          "thumb": "extended",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "extended"
+        },
+        "hand_location": "face",
+        "two_handed": false,
+        "min_hold_ms": 220
+      }
+    },
+    {
+      "id": "HEAD",
+      "gloss": "HEAD / HEADACHE",
+      "meaning_en": "Head / Headache",
+      "meaning_ml": "തലവേദന",
+      "category": "medical",
+      "description": "Dominant hand touching temple or forehead with pained expression.",
+      "cultural_context": "Core symptom locator in hospital and telemedicine ISL communication.",
+      "recognition_spec": {
+        "primary_hand": "dominant",
+        "finger_state": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "hand_location": "face",
+        "two_handed": false,
+        "min_hold_ms": 220
+      }
+    },
+    {
+      "id": "STOMACH",
+      "gloss": "STOMACH / ABDOMEN",
+      "meaning_en": "Stomach",
+      "meaning_ml": "വയർ",
+      "category": "medical",
+      "description": "Dominant hand resting on or rubbing lower stomach area.",
+      "cultural_context": "Crucial pain and hunger indicator in patient care.",
+      "recognition_spec": {
+        "primary_hand": "dominant",
+        "finger_state": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "extended"
+        },
+        "hand_location": "neutral",
+        "two_handed": false,
+        "min_hold_ms": 220
       }
     }
   ]

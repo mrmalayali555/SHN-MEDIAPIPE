@@ -393,8 +393,8 @@ def get_isl_connectivity():
 def sign_translate():
     """Translate a sequence of recognized sign glosses into a natural English sentence.
 
-    Specifically recognizes fingerspelling sequences (e.g. LETTER_I + LETTER_L + LETTER_Y)
-    as well as simultaneous whole-sign gestures, with ISL grammar awareness and Gemini polishing.
+    Applies ISL linguistic grammar rules (SOV word order, WH-final questions, topic-comment),
+    distinguishes fingerspelling vs simultaneous signs, and uses Gemini ISL polishing.
     """
     payload = request.get_json(force=True) or {}
     glosses = payload.get("glosses", [])
@@ -411,27 +411,70 @@ def sign_translate():
     if is_fingerspelled_ily and len(glosses) == 3:
         return jsonify({
             "sentence": "I love you (fingerspelled: I-L-Y).",
+            "malayalam": "ഞാൻ നിന്നെ സ്നേഹിക്കുന്നു.",
             "method": "fingerspelling_rules",
             "type": "fingerspelling_sequence"
         })
 
-    # Try Gemini for natural language generation and ISL grammar polishing
+    # High-Priority ISL Grammatical Patterns (Sub-millisecond deterministic translation)
+    clean_glosses = [g.replace("PRO-2", "YOUR").replace("PRO-1", "I") for g in glosses]
+    gloss_key = " ".join(clean_glosses)
+
+    ISL_SENTENCE_PATTERNS = {
+        "YOUR NAME WHAT": ("What is your name?", "നിങ്ങളുടെ പേരെന്താണ്?"),
+        "NAME WHAT": ("What is your name?", "നിങ്ങളുടെ പേരെന്താണ്?"),
+        "YOU NAME WHAT": ("What is your name?", "നിങ്ങളുടെ പേരെന്താണ്?"),
+        "HOSPITAL WHERE": ("Where is the hospital?", "ആശുപത്രി എവിടെയാണ്?"),
+        "BATHROOM WHERE": ("Where is the bathroom?", "ബാത്ത്റൂം എവിടെയാണ്?"),
+        "DOCTOR WHERE": ("Where is the doctor?", "ഡോക്ടർ എവിടെയാണ്?"),
+        "DOCTOR CALL PLEASE": ("Please call the doctor.", "ദയവായി ഡോക്ടറെ വിളിക്കൂ."),
+        "DOCTOR CALL": ("Please call the doctor immediately.", "ദയവായി ഡോക്ടറെ വിളിക്കൂ."),
+        "CALL DOCTOR": ("Please call the doctor.", "ദയവായി ഡോക്ടറെ വിളിക്കൂ."),
+        "FAMILY CALL": ("Please call my family.", "എന്റെ കുടുംബത്തെ വിളിക്കൂ."),
+        "MY FAMILY CALL": ("Please call my family.", "എന്റെ കുടുംബത്തെ വിളിക്കൂ."),
+        "HEAD PAIN": ("I have a severe headache.", "എനിക്ക് തലവേദനയുണ്ട്."),
+        "STOMACH PAIN": ("My stomach is hurting.", "എനിക്ക് വയറുവേദനയുണ്ട്."),
+        "FEVER HAVE": ("I have a fever.", "എനിക്ക് പനിയുണ്ട്."),
+        "I WATER WANT": ("I want some water, please.", "എനിക്ക് വെള്ളം വേണം."),
+        "WATER WANT": ("I want some water, please.", "എനിക്ക് വെള്ളം വേണം."),
+        "WATER NEED": ("I need water.", "എനിക്ക് വെള്ളം വേണം."),
+        "I FOOD HUNGRY": ("I am hungry and need food.", "എനിക്ക് വിശക്കുന്നു, ഭക്ഷണം വേണം."),
+        "FOOD HUNGRY": ("I am hungry. Please give me food.", "എനിക്ക് വിശക്കുന്നു, ഭക്ഷണം വേണം."),
+        "MEDICINE TIME WHAT": ("What time should I take the medicine?", "മരുന്ന് കഴിക്കേണ്ട സമയം എപ്പോഴാണ്?"),
+        "HOW_ARE_YOU": ("How are you doing?", "സുഖമാണോ?"),
+        "HOW ARE YOU": ("How are you doing?", "സുഖമാണോ?"),
+        "NICE_TO_MEET_YOU": ("Nice to meet you.", "കണ്ടതിൽ സന്തോഷം."),
+        "NICE TO MEET YOU": ("Nice to meet you.", "കണ്ടതിൽ സന്തോഷം."),
+        "PLEASE HELP": ("Please help me.", "ദയവായി എന്നെ സഹായിക്കൂ."),
+        "HELP PLEASE": ("Please help me.", "ദയവായി എന്നെ സഹായിക്കൂ."),
+        "EMERGENCY DOCTOR CALL": ("Emergency! Please call a doctor right away.", "അടിയന്തിരമാണ്! ഉടൻ ഡോക്ടറെ വിളിക്കൂ."),
+        "EMERGENCY CALL": ("Emergency! Please call for help immediately.", "അടിയന്തിരമാണ്! ഉടൻ സഹായം വിളിക്കൂ."),
+    }
+
+    if gloss_key in ISL_SENTENCE_PATTERNS:
+        eng, mal = ISL_SENTENCE_PATTERNS[gloss_key]
+        return jsonify({
+            "sentence": eng,
+            "malayalam": mal,
+            "method": "isl_syntactic_patterns",
+            "glosses": glosses
+        })
+
+    # Try Gemini for open-ended natural language generation and ISL grammar polishing
     try:
         from eyevoice.gemini_service import call_gemini
         prompt = (
-            "You are an Indian Sign Language (ISL) interpreter. "
+            "You are an expert Indian Sign Language (ISL) interpreter. "
             "ISL uses SOV (Subject-Object-Verb) word order, topic-comment structure, "
-            "and sentence-final negation/questions. "
-            "Given these recognized ISL sign glosses or fingerspelled letters in sequence order, "
-            "translate them into a single natural, fluent English sentence. "
-            "If the sequence contains consecutive letters (e.g. LETTER_C, LETTER_A, LETTER_T), "
-            "combine them into fingerspelled words. "
+            "and sentence-final interrogatives (e.g. [YOUR] [NAME] [WHAT] translates to 'What is your name?'). "
+            "Given these recognized ISL sign glosses in sequence order, translate them into a single natural, fluent English sentence. "
+            "If the sequence contains consecutive letters (e.g. LETTER_C, LETTER_A, LETTER_T), combine them into fingerspelled words. "
             "Only output the translated sentence, nothing else.\n\n"
             f"Sign glosses: {' → '.join(glosses)}"
         )
         result = call_gemini(prompt, json_mode=False, timeout=6)
         if result and isinstance(result, str) and len(result.strip()) > 0:
-            return jsonify({"sentence": result.strip(), "method": "gemini_polish"})
+            return jsonify({"sentence": result.strip(), "method": "gemini_polish", "glosses": glosses})
     except Exception as e:
         print(f"Gemini sign-translate fallback: {e}")
 
@@ -451,7 +494,26 @@ def sign_translate():
         words.append("".join(current_letters))
 
     sentence = " ".join(words) + "."
-    return jsonify({"sentence": sentence, "method": "fallback"})
+    return jsonify({"sentence": sentence, "method": "fallback", "glosses": glosses})
+
+
+@app.route("/api/sign-interpret-continuous", methods=["POST"])
+def sign_interpret_continuous():
+    """Use Gemini Vision to analyze a multi-frame temporal video burst of continuous signing."""
+    payload = request.get_json(force=True) or {}
+    images = payload.get("images", [])
+    if not images or not isinstance(images, list):
+        return jsonify({"error": "no images array provided"}), 400
+
+    try:
+        from eyevoice.gemini_service import interpret_continuous_signing
+        result = interpret_continuous_signing(images)
+        if result:
+            return jsonify(result)
+        return jsonify({"detected": False, "sentence": "", "error": "Continuous AI interpreter unavailable"})
+    except Exception as e:
+        print(f"Continuous sign interpret error: {e}")
+        return jsonify({"detected": False, "sentence": "", "error": str(e)}), 500
 
 
 @app.route("/api/sign-interpret-frame", methods=["POST"])

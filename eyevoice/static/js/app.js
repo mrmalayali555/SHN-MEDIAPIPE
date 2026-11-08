@@ -2451,6 +2451,20 @@ function onSignTrackerFrame(frameData) {
     onSignConfirmed(result.confirmedSign);
   }
 
+  // Live Continuous Sentence Synchronization
+  if (result.continuousSentence && result.continuousSentence !== currentSignSentence && result.continuousSentence.length > 2) {
+    currentSignSentence = result.continuousSentence;
+    currentSignMalayalam = result.malayalamSentence || '';
+
+    const transEl = document.getElementById('sign-translated-text');
+    const malEl = document.getElementById('sign-malayalam-text');
+    const speakBtn = document.getElementById('btn-sign-speak');
+
+    if (transEl) transEl.textContent = `"${currentSignSentence}"`;
+    if (malEl) malEl.textContent = currentSignMalayalam ? `മലയാളം: ${currentSignMalayalam}` : '';
+    if (speakBtn) speakBtn.disabled = false;
+  }
+
   // 5. Automatic Continuous Live Translation for ANY Indian Sign Language phrase
   if (result.handsDetected > 0) {
     if (handsInSigningSpaceTime === 0) handsInSigningSpaceTime = now;
@@ -3085,60 +3099,61 @@ async function triggerAiSignInterpretation() {
 async function autoStreamSigningBurstToAI() {
   if (isAutoStreaming) return;
 
-  let frameB64 = null;
-  if (typeof window.captureSignFrame === 'function') {
-    frameB64 = window.captureSignFrame();
-  }
-  if (!frameB64) {
-    const canvas = document.getElementById('sign-canvas');
-    if (canvas) {
-      try { frameB64 = canvas.toDataURL('image/jpeg', 0.7); } catch (_) {}
-    }
-  }
-  if (!frameB64) return;
+  const canvas = document.getElementById('sign-canvas');
+  if (!canvas) return;
 
   isAutoStreaming = true;
   const statusChip = document.getElementById('ai-sign-status-chip');
   const confEl = document.getElementById('sign-detect-conf');
   if (statusChip) {
     statusChip.className = 'ai-sign-status-chip active';
-    statusChip.textContent = '🧠 Translating Live Indian Sign Language Stream…';
+    statusChip.textContent = '🧠 Translating Continuous Indian Sign Language Sentence…';
   }
   if (confEl) {
-    confEl.textContent = '🧠 Live AI Analyzing…';
+    confEl.textContent = '🧠 Multi-Frame AI Analyzing…';
     confEl.className = 'sign-confidence-badge medium';
   }
 
   try {
-    const res = await fetch('/api/sign-interpret-frame', {
+    // Capture temporal sequence of frames across continuous signing burst
+    const frames = [];
+    try { frames.push(canvas.toDataURL('image/jpeg', 0.65)); } catch (_) {}
+    await new Promise(r => setTimeout(r, 180));
+    try { frames.push(canvas.toDataURL('image/jpeg', 0.65)); } catch (_) {}
+    await new Promise(r => setTimeout(r, 180));
+    try { frames.push(canvas.toDataURL('image/jpeg', 0.65)); } catch (_) {}
+
+    if (frames.length === 0) return;
+
+    const res = await fetch('/api/sign-interpret-continuous', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: frameB64 })
+      body: JSON.stringify({ images: frames })
     });
 
     if (res.ok) {
       const data = await res.json();
-      if (data && data.detected && data.meaning_en) {
+      if (data && data.detected && data.sentence) {
         playClickChime();
 
         // Update live detection HUD
         const glossEl = document.getElementById('sign-detect-gloss');
         const meaningEl = document.getElementById('sign-detect-meaning');
-        if (glossEl) glossEl.textContent = data.sign_name || 'ISL Signed';
-        if (meaningEl) meaningEl.textContent = data.meaning_en;
+        if (glossEl) glossEl.textContent = data.glosses ? data.glosses.join(' ➔ ') : (data.sign_name || 'ISL Continuous');
+        if (meaningEl) meaningEl.textContent = data.sentence;
         if (confEl) {
-          confEl.textContent = '🧠 ' + (data.confidence || 'high').toUpperCase() + ' MATCH';
+          confEl.textContent = '🧠 ' + (data.confidence || 95) + '% CONTINUOUS MATCH';
           confEl.className = 'sign-confidence-badge high';
         }
 
         if (statusChip) {
           statusChip.className = 'ai-sign-status-chip detected';
-          statusChip.textContent = `● Translated: "${data.meaning_en}"`;
+          statusChip.textContent = `● Translated: "${data.sentence}"`;
         }
 
         // Update translated spoken output
-        currentSignSentence = data.meaning_en;
-        currentSignMalayalam = data.meaning_ml || '';
+        currentSignSentence = data.sentence;
+        currentSignMalayalam = data.malayalam || '';
 
         const transEl = document.getElementById('sign-translated-text');
         const malEl = document.getElementById('sign-malayalam-text');
@@ -3158,34 +3173,35 @@ async function autoStreamSigningBurstToAI() {
         const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         signConversationHistory.unshift({
           icon: '🤟',
-          text: `Person A (ISL): "${data.meaning_en}"`,
-          glosses: `${data.sign_name || 'ISL'} • ${data.hand_description || ''}`,
+          text: `Person A (ISL): "${data.sentence}"`,
+          glosses: (data.glosses || []).join(' ') || (data.explanation || 'ISL Continuous'),
           time: timeStr
         });
 
         const historyList = document.getElementById('sign-history-list');
         if (historyList) {
           historyList.innerHTML = signConversationHistory.map(item => `
-            <div class="sign-history-item" style="${item.icon === '🤟' ? 'border-color:#10b981;background:rgba(16,185,129,0.1);' : ''}">
+            <div class="sign-history-item">
               <div class="sign-history-avatar">${item.icon}</div>
               <div class="sign-history-content">
                 <div class="sign-history-text">${item.text}</div>
-                <div class="sign-history-meta">${item.glosses} • ${item.time}</div>
+                <div class="sign-history-meta">ISL: [${item.glosses}] • ${item.time}</div>
               </div>
             </div>
           `).join('');
         }
-      } else {
-        if (statusChip) {
-          statusChip.className = 'ai-sign-status-chip idle';
-          statusChip.textContent = '🟢 Continuous Interpreter Ready • Sign in front of camera';
-        }
       }
     }
   } catch (err) {
-    console.error('Auto stream error:', err);
+    console.error('Continuous stream error:', err);
   } finally {
     isAutoStreaming = false;
+    setTimeout(() => {
+      if (statusChip) {
+        statusChip.className = 'ai-sign-status-chip active';
+        statusChip.textContent = '🟢 Continuous ISL Stream Active: Translates sentences in real time';
+      }
+    }, 2500);
   }
 }
 

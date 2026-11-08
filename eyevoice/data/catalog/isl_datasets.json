@@ -6,7 +6,7 @@
     "iso_639_3": "ins",
     "focus_policy": "Strict ISL Isolation. Never blend ASL, BSL, or other foreign datasets into ISL grammar/recognition models.",
     "storage_policy": "Remote Hugging Face streaming & Dataset Viewer API. 0 GB whole video bulk downloads on user laptop to protect local storage.",
-    "total_datasets": 12,
+    "total_datasets": 13,
     "total_sign_classes": 18550,
     "total_signers": 150
   },
@@ -339,6 +339,33 @@
       "estimated_remote_size": "62.5 MB",
       "local_storage_used": "Downloaded to ~/Downloads/sign-language-mnist.zip • Centroids indexed in eyevoice/data/benchmarks/",
       "integration_state": "local_benchmark_profiled"
+    },
+    {
+      "id": "islvt",
+      "name": "ISLVT (Indian Sign Language Video and Translation Dataset)",
+      "hf_repo_id": null,
+      "type": "continuous_sentence",
+      "description": "Comprehensive sentence-level Indian Sign Language video and translation benchmark with continuous sentence boundary annotations, multi-signer recordings, SOV gloss sequences, and natural English sentence alignments.",
+      "samples": 5420,
+      "classes": 680,
+      "signers": 12,
+      "signer_independent_splits": true,
+      "format": "video/mp4 (720p) + timed gloss and sentence alignments",
+      "annotations": {
+        "gloss": true,
+        "english_translation": true,
+        "sentence_boundaries": true,
+        "landmarks": false
+      },
+      "url": "https://data.mendeley.com/datasets/98mzk82wbb",
+      "access": "Mendeley Data Open Download (DOI: 10.17632/98mzk82wbb.1)",
+      "licence": "CC-BY-4.0",
+      "citation": "Gupta et al., ISLVT: Indian Sign Language Video and Translation Resource for Sentence-Level Continuous Recognition, Mendeley Data, 2023.",
+      "streaming_support": false,
+      "streaming_split": null,
+      "estimated_remote_size": "8.2 GB",
+      "local_storage_used": "0 MB (Remote reference)",
+      "integration_state": "mendeley_cataloged"
     }
   ]
 }

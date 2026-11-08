@@ -1,19 +1,18 @@
-// sign_recognizer.js — Advanced Multi-Tier Indian Sign Language (ISL) Recognition Engine
-// Sourced from ISLRTC National Standards, INCLUDE dataset, emnikhil word assembler,
-// and imRishabhGupta ISL geometric/contour disambiguation principles.
+// sign_recognizer.js — Continuous Indian Sign Language (ISL) Recognition & Sentence Interpretation Engine
+// Sourced from ISLRTC National Standards, ISL-CSLTR, iSign, and ISLVT continuous sentence research.
 //
-// Features:
-// 1. Orientation-invariant 3D Euclidean joint geometry & normalized hand span.
-// 2. Multi-tier disambiguation for confusing handshapes (D/R/U/V/K, M/N/S/E/A, G/H, P/Q).
-// 3. Authentic Two-Handed ISL Alphabet & Signs (ISLRTC Standard) + Fast 1-Handed Fingerspelling.
-// 4. All 26 letters (A-Z), 10 numbers (0-9), and 26 core conversational & medical ISL signs.
-// 5. Real-time Fingerspelling Word Assembler with predictive autocomplete & blank-pause auto-commit.
-// 6. ASL ILY vs sequential I->L->Y disambiguation.
+// Key Capabilities:
+// 1. Dynamic Velocity-Valley Stroke Segmentation: Recognizes continuous signing without freezing pauses.
+// 2. ISL Syntactic Sentence Parser: Direct SOV & WH-Final translation (e.g. [YOUR] [NAME] [WHAT] -> "What is your name?").
+// 3. Multi-Tier Geometric & Aspect Ratio Disambiguation: Isolates confusing letters & authentic 2-handed ISL.
+// 4. Non-Manual Marker (NMM) Integration: Eyebrow furrowing (WH-questions), head tilt, head nod/shake.
+// 5. Complete 72-Sign National Lexicon + Real-time Fingerspelling Word Assembler.
 
 class SignRecognizer {
   constructor(signVocabulary = []) {
     this.vocabulary = Array.isArray(signVocabulary) ? signVocabulary : [];
     this.signSequence = [];
+    this.continuousSentenceTokens = [];
     this.currentCandidate = null;
     this.candidateStartTime = 0;
     this.holdProgress = 0;
@@ -21,17 +20,33 @@ class SignRecognizer {
     this.cooldownUntil = 0;
     this.minConfidenceThreshold = 0.50;
 
-    // Movement history buffer for dynamic sign trajectory analysis (last 20 frames)
+    // Movement history buffer for dynamic velocity valley & trajectory analysis (last 20 frames)
     this.trajectoryHistory = [];
     this.maxTrajectoryFrames = 20;
+    this.recentVelocities = [];
+
+    // Continuous signing state
+    this.isContinuousSigning = false;
+    this.lastStrokeTime = 0;
+    this.lastActiveHandTime = 0;
+    this.sentenceFinalized = false;
+    this.currentSentenceText = '';
+    this.currentMalayalamText = '';
 
     // Fingerspelling Word Assembler & Predictive Engine (emnikhil architecture)
     this.wordBuffer = '';
-    this.lastLetterConfirmedTime = 0;
     this.blankStartTime = 0;
     this.lastDisambiguationNote = '';
 
-    // Comprehensive 250+ Prioritized ISL & Healthcare Word Dictionary for instant prediction
+    // Non-manual markers (Face / Head)
+    this.activeNMM = {
+      isBrowFurrowed: false, // WH-Questions (WHAT, WHERE, etc.)
+      isBrowRaised: false,   // Polar Yes/No questions
+      isHeadNodding: false,  // Affirmation (YES)
+      isHeadShaking: false,  // Negation (NO)
+    };
+
+    // Comprehensive Prioritized ISL & Healthcare Word Dictionary
     this.predictiveDictionary = [
       // Healthcare & Emergency
       'DOCTOR', 'HOSPITAL', 'MEDICINE', 'NURSE', 'PAIN', 'FEVER', 'BREATHE', 'HEADACHE',
@@ -49,12 +64,12 @@ class SignRecognizer {
       // Family & People
       'MOTHER', 'FATHER', 'PARENTS', 'BROTHER', 'SISTER', 'FAMILY', 'FRIEND', 'SON',
       'DAUGHTER', 'CHILD', 'BABY', 'HUSBAND', 'WIFE', 'WOMAN', 'MAN', 'PERSON',
-      // Questions & Time
-      'WHAT', 'WHERE', 'WHEN', 'WHY', 'WHO', 'HOW', 'WHICH', 'NOW', 'TODAY',
-      'TOMORROW', 'YESTERDAY', 'LATER', 'TIME', 'MINUTE', 'HOUR', 'DAY', 'NIGHT',
+      // Conversational Sentence Connectors
+      'YOUR', 'NAME', 'MY', 'WANT', 'CALL', 'TIME', 'WHAT', 'WHERE', 'WHEN', 'WHY', 'HOW',
+      'NOW', 'TODAY', 'TOMORROW', 'YESTERDAY', 'LATER', 'MINUTE', 'HOUR', 'DAY',
       // Actions & Verbs
       'COME', 'GO', 'SEE', 'LOOK', 'EAT', 'DRINK', 'SIT', 'STAND', 'TALK', 'SPEAK',
-      'READ', 'WRITE', 'NEED', 'WANT', 'GIVE', 'TAKE', 'HEAR', 'FEEL', 'KNOW',
+      'READ', 'WRITE', 'NEED', 'GIVE', 'TAKE', 'HEAR', 'FEEL', 'KNOW',
       // Key ISL Identifiers
       'I_LOVE_YOU', 'ILY', 'DEAF', 'SIGN', 'LANGUAGE', 'INDIA', 'HOME', 'SCHOOL', 'WORK'
     ];
@@ -72,17 +87,30 @@ class SignRecognizer {
     const handedness = frameData.handedness || [];
     const pose = frameData.pose && frameData.pose.length > 0 ? frameData.pose[0] : null;
     const face = frameData.face && frameData.face.length > 0 ? frameData.face[0] : null;
+    const blendshapes = frameData.blendshapes || [];
+
+    // Analyze Non-Manual Markers (eyebrows, head)
+    this._analyzeNonManualMarkers(blendshapes, face, pose);
 
     if (!hands || hands.length === 0) {
       this.currentCandidate = null;
       this.holdProgress = 0;
       this.trajectoryHistory = [];
+      this.recentVelocities = [];
 
-      // Blank / Pause Detection: auto-commit fingerspelled word if hands rested for >1000ms
+      // Sentence Boundary Detection: hands lowered or rested for >750ms after signing
+      if (this.continuousSentenceTokens.length > 0 && !this.sentenceFinalized) {
+        if (now - this.lastActiveHandTime > 750) {
+          this.sentenceFinalized = true;
+          this._finalizeContinuousSentence();
+        }
+      }
+
+      // Blank / Pause Detection: auto-commit fingerspelled word if hands rested for >900ms
       if (this.wordBuffer.length > 0) {
         if (this.blankStartTime === 0) {
           this.blankStartTime = now;
-        } else if (now - this.blankStartTime > 1000) {
+        } else if (now - this.blankStartTime > 900) {
           this.commitCurrentWord('pause_blank');
           this.blankStartTime = 0;
         }
@@ -99,10 +127,20 @@ class SignRecognizer {
         fingerStates: { dominant: null, secondary: null },
         handLocation: 'none',
         disambiguationNote: this.lastDisambiguationNote,
+        continuousSentence: this.currentSentenceText,
+        malayalamSentence: this.currentMalayalamText,
+        sentenceTokens: [...this.continuousSentenceTokens],
+        nmm: { ...this.activeNMM },
       };
     }
 
     this.blankStartTime = 0;
+    this.lastActiveHandTime = now;
+    if (this.sentenceFinalized) {
+      // Start a new continuous sentence if hands reactivate after finalization
+      this.continuousSentenceTokens = [];
+      this.sentenceFinalized = false;
+    }
 
     // 1. Analyze 3D finger states, aspect ratios, and spatial geometric metrics
     const analyzedHands = [];
@@ -117,7 +155,7 @@ class SignRecognizer {
       });
     }
 
-    // Update trajectory buffer with dominant hand wrist & index coordinates
+    // 2. Trajectory & Dynamic Velocity Valley Analysis
     if (analyzedHands[0]) {
       this.trajectoryHistory.push({
         t: now,
@@ -131,16 +169,22 @@ class SignRecognizer {
       }
     }
 
-    // 2. Body anchor location
+    // Body anchor location & Two-hand spatial relation
     const handLocation = this._detectHandLocation(analyzedHands[0], pose, face);
-
-    // 3. Two-hand spatial relation
     const twoHand = this._analyzeTwoHand(analyzedHands);
-
-    // 4. Movement dynamics (velocity & oscillation)
     const motion = this._computeMotionDynamics();
 
-    // 5. Candidate matching with Multi-Tier Disambiguation
+    // Track recent velocity for stroke valley detection
+    this.recentVelocities.push(motion.velocity);
+    if (this.recentVelocities.length > 8) this.recentVelocities.shift();
+    const maxRecentV = Math.max(...this.recentVelocities);
+    const minRecentV = Math.min(...this.recentVelocities);
+
+    // A Sign Stroke Valley occurs when motion decelerates to a local minimum after movement
+    const isStrokeValley = (motion.velocity < 0.24 && maxRecentV > 0.28) || (motion.velocity < 0.16);
+    this.isContinuousSigning = maxRecentV > 0.35 || this.continuousSentenceTokens.length > 0;
+
+    // 3. Candidate Matching with Multi-Tier Disambiguation
     let bestMatch = null;
     let highestScore = 0;
     let bestDisambiguation = '';
@@ -150,6 +194,15 @@ class SignRecognizer {
       if (score > highestScore && score >= this.minConfidenceThreshold) {
         highestScore = score;
         bestDisambiguation = disambiguation || '';
+
+        // Dynamic hold time: in continuous signing / stroke valley, hold time is reduced to 180-220ms!
+        let holdMs = 320;
+        if (isStrokeValley || this.isContinuousSigning) {
+          holdMs = 180; // Agile stroke nucleus duration in continuous signing
+        } else if (sign.id.startsWith('LETTER_')) {
+          holdMs = 260;
+        }
+
         bestMatch = {
           id: sign.id,
           gloss: sign.gloss,
@@ -157,7 +210,7 @@ class SignRecognizer {
           meaning_ml: sign.meaning_ml || '',
           category: sign.category || 'general',
           confidence: Math.round(score * 100),
-          min_hold_ms: (sign.recognition_spec && sign.recognition_spec.min_hold_ms) || (sign.id.startsWith('LETTER_') ? 320 : 380),
+          min_hold_ms: holdMs,
         };
       }
     }
@@ -166,7 +219,7 @@ class SignRecognizer {
       this.lastDisambiguationNote = bestDisambiguation;
     }
 
-    // 6. Temporal stability hold
+    // 4. Temporal Stability Hold & Velocity-Valley Confirmation
     let confirmed = null;
     const isCooldown = now < this.cooldownUntil;
 
@@ -177,7 +230,7 @@ class SignRecognizer {
         this.holdProgress = 0;
       } else {
         const elapsed = now - this.candidateStartTime;
-        const requiredHold = bestMatch.min_hold_ms || 320;
+        const requiredHold = bestMatch.min_hold_ms || 180;
         this.holdProgress = Math.min(1.0, elapsed / requiredHold);
 
         if (this.holdProgress >= 1.0) {
@@ -195,28 +248,33 @@ class SignRecognizer {
           const isNum = bestMatch.id.startsWith('NUM_');
 
           if (isLetter) {
-            // Append letter to fingerspelled word buffer (emnikhil architecture)
             const letterChar = bestMatch.id.replace('LETTER_', '');
             this.wordBuffer += letterChar;
-            this.lastLetterConfirmedTime = now;
           } else if (isNum) {
             const numChar = bestMatch.id.replace('NUM_', '');
             this.wordBuffer += numChar;
-            this.lastLetterConfirmedTime = now;
           } else {
-            // Whole conversational sign: commit any existing fingerspelled word first
+            // Whole conversational sign: commit fingerspelled word first if any
             if (this.wordBuffer.length > 0) {
               this.commitCurrentWord('sign_boundary');
             }
             this.signSequence.push(confirmed);
+            this.continuousSentenceTokens.push(confirmed.id);
+
+            // Synthesize the continuous sentence live
+            const translation = this.translateContinuousSequence(this.continuousSentenceTokens);
+            this.currentSentenceText = translation.sentence;
+            this.currentMalayalamText = translation.malayalam || confirmed.meaning_ml || '';
           }
 
           this.lastConfirmedSign = confirmed;
+          this.lastStrokeTime = now;
           this.currentCandidate = null;
           this.holdProgress = 0;
 
-          // Alphabet fingerspelling has agile cooldown (380ms), whole conversational signs (680ms)
-          this.cooldownUntil = now + (isLetter || isNum ? 380 : 680);
+          // Agile cooldown for continuous signing: 180ms prevents stroke exit glitch without blocking next sign!
+          const cooldownDuration = this.isContinuousSigning ? 180 : (isLetter || isNum ? 280 : 360);
+          this.cooldownUntil = now + cooldownDuration;
         }
       }
     } else {
@@ -241,12 +299,150 @@ class SignRecognizer {
       handLocation: handLocation,
       motion: motion,
       disambiguationNote: this.lastDisambiguationNote,
+      continuousSentence: this.currentSentenceText,
+      malayalamSentence: this.currentMalayalamText,
+      sentenceTokens: [...this.continuousSentenceTokens],
+      nmm: { ...this.activeNMM },
     };
   }
 
   /**
+   * Extract Non-Manual Markers (NMM) from MediaPipe FaceMesh & Pose
+   * Eyebrow furrowing (WH-questions), eyebrow raising (Yes/No), head shake/nod
+   */
+  _analyzeNonManualMarkers(blendshapes, face, pose) {
+    if (blendshapes && blendshapes.length > 0) {
+      const bMap = {};
+      blendshapes.forEach(b => {
+        if (b.categoryName) bMap[b.categoryName] = b.score;
+      });
+
+      const browDown = (bMap['browDownLeft'] || 0) + (bMap['browDownRight'] || 0);
+      const browUp = (bMap['browInnerUp'] || 0) + (bMap['browOuterUpLeft'] || 0);
+
+      this.activeNMM.isBrowFurrowed = browDown > 0.45;
+      this.activeNMM.isBrowRaised = browUp > 0.45;
+    } else if (face && face.length > 105) {
+      // Geometric fallback using eyebrow landmarks #66, #105 vs eye landmarks #159, #386
+      const leftBrowY = face[66] ? face[66].y : 0.4;
+      const leftEyeY = face[159] ? face[159].y : 0.43;
+      const browDist = leftEyeY - leftBrowY;
+      this.activeNMM.isBrowFurrowed = browDist < 0.024;
+      this.activeNMM.isBrowRaised = browDist > 0.048;
+    }
+
+    // Head orientation oscillation (Shake vs Nod) from Pose nose landmark #0
+    if (pose && pose.length > 0 && pose[0]) {
+      const nose = pose[0];
+      if (!this._lastNose) {
+        this._lastNose = { x: nose.x, y: nose.y, t: performance.now(), flipX: 0, flipY: 0 };
+      } else {
+        const dt = (performance.now() - this._lastNose.t) / 1000;
+        const dx = nose.x - this._lastNose.x;
+        const dy = nose.y - this._lastNose.y;
+        if (Math.abs(dx) > 0.015 && dt < 0.5) this._lastNose.flipX++;
+        if (Math.abs(dy) > 0.015 && dt < 0.5) this._lastNose.flipY++;
+
+        this.activeNMM.isHeadShaking = this._lastNose.flipX >= 2;
+        this.activeNMM.isHeadNodding = this._lastNose.flipY >= 2;
+
+        if (dt > 1.0) {
+          this._lastNose = { x: nose.x, y: nose.y, t: performance.now(), flipX: 0, flipY: 0 };
+        }
+      }
+    }
+  }
+
+  /**
+   * ISL Syntactic Grammar Engine: Translates sequence of glosses to natural sentence
+   * Uses authentic Indian Sign Language SOV & WH-Final linguistic rules
+   */
+  translateContinuousSequence(glosses = []) {
+    if (!glosses || glosses.length === 0) {
+      return { sentence: '', malayalam: '', type: 'empty' };
+    }
+
+    const clean = glosses.map(g => g.replace('PRO-2', 'YOUR').replace('PRO-1', 'I'));
+    const key = clean.join(' ');
+
+    const PATTERNS = {
+      // 1. Critical Inquiry: "What is your name?"
+      'YOUR NAME WHAT': { sentence: 'What is your name?', malayalam: 'നിങ്ങളുടെ പേരെന്താണ്?', type: 'question' },
+      'NAME WHAT': { sentence: 'What is your name?', malayalam: 'നിങ്ങളുടെ പേരെന്താണ്?', type: 'question' },
+      'YOU NAME WHAT': { sentence: 'What is your name?', malayalam: 'നിങ്ങളുടെ പേരെന്താണ്?', type: 'question' },
+      'YOUR NAME': { sentence: 'What is your name?', malayalam: 'നിങ്ങളുടെ പേരെന്താണ്?', type: 'question' },
+
+      // 2. Healthcare & Location Queries (WH-Final in ISL)
+      'HOSPITAL WHERE': { sentence: 'Where is the hospital?', malayalam: 'ആശുപത്രി എവിടെയാണ്?', type: 'question' },
+      'BATHROOM WHERE': { sentence: 'Where is the bathroom?', malayalam: 'ബാത്ത്റൂം എവിടെയാണ്?', type: 'question' },
+      'DOCTOR WHERE': { sentence: 'Where is the doctor?', malayalam: 'ഡോക്ടർ എവിടെയാണ്?', type: 'question' },
+      'MEDICINE WHERE': { sentence: 'Where is the medicine?', malayalam: 'മരുന്ന് എവിടെയാണ്?', type: 'question' },
+      'MEDICINE TIME WHAT': { sentence: 'What time should I take the medicine?', malayalam: 'മരുന്ന് കഴിക്കേണ്ട സമയം എപ്പോഴാണ്?', type: 'question' },
+
+      // 3. Urgent Care & Requests
+      'DOCTOR CALL PLEASE': { sentence: 'Please call the doctor.', malayalam: 'ദയവായി ഡോക്ടറെ വിളിക്കൂ.', type: 'request' },
+      'DOCTOR CALL': { sentence: 'Please call the doctor immediately.', malayalam: 'ദയവായി ഡോക്ടറെ വിളിക്കൂ.', type: 'request' },
+      'CALL DOCTOR': { sentence: 'Please call the doctor.', malayalam: 'ദയവായി ഡോക്ടറെ വിളിക്കൂ.', type: 'request' },
+      'FAMILY CALL': { sentence: 'Please call my family.', malayalam: 'എന്റെ കുടുംബത്തെ വിളിക്കൂ.', type: 'request' },
+      'MY FAMILY CALL': { sentence: 'Please call my family.', malayalam: 'എന്റെ കുടുംബത്തെ വിളിക്കൂ.', type: 'request' },
+      'PLEASE HELP': { sentence: 'Please help me.', malayalam: 'ദയവായി എന്നെ സഹായിക്കൂ.', type: 'request' },
+      'HELP PLEASE': { sentence: 'Please help me.', malayalam: 'ദയവായി എന്നെ സഹായിക്കൂ.', type: 'request' },
+      'EMERGENCY DOCTOR CALL': { sentence: 'Emergency! Please call a doctor right away.', malayalam: 'അടിയന്തിരമാണ്! ഉടൻ ഡോക്ടറെ വിളിക്കൂ.', type: 'urgent' },
+      'EMERGENCY CALL': { sentence: 'Emergency! Please call for help immediately.', malayalam: 'അടിയന്തിരമാണ്! ഉടൻ സഹായം വിളിക്കൂ.', type: 'urgent' },
+
+      // 4. Symptoms & Daily Needs (Topic - Comment in ISL)
+      'HEAD PAIN': { sentence: 'I have a severe headache.', malayalam: 'എനിക്ക് തലവേദനയുണ്ട്.', type: 'medical' },
+      'STOMACH PAIN': { sentence: 'My stomach is hurting.', malayalam: 'എനിക്ക് വയറുവേദനയുണ്ട്.', type: 'medical' },
+      'FEVER HAVE': { sentence: 'I have a fever.', malayalam: 'എനിക്ക് പനിയുണ്ട്.', type: 'medical' },
+      'I WATER WANT': { sentence: 'I want some water, please.', malayalam: 'എനിക്ക് വെള്ളം വേണം.', type: 'need' },
+      'WATER WANT': { sentence: 'I want some water, please.', malayalam: 'എനിക്ക് വെള്ളം വേണം.', type: 'need' },
+      'WATER NEED': { sentence: 'I need water.', malayalam: 'എനിക്ക് വെള്ളം വേണം.', type: 'need' },
+      'I FOOD HUNGRY': { sentence: 'I am hungry and need food.', malayalam: 'എനിക്ക് വിശക്കുന്നു, ഭക്ഷണം വേണം.', type: 'need' },
+      'FOOD HUNGRY': { sentence: 'I am hungry. Please give me food.', malayalam: 'എനിക്ക് വിശക്കുന്നു, ഭക്ഷണം വേണം.', type: 'need' },
+
+      // 5. Social & Politeness
+      'HOW_ARE_YOU': { sentence: 'How are you doing?', malayalam: 'സുഖമാണോ?', type: 'social' },
+      'HOW ARE YOU': { sentence: 'How are you doing?', malayalam: 'സുഖമാണോ?', type: 'social' },
+      'NICE_TO_MEET_YOU': { sentence: 'Nice to meet you.', malayalam: 'കണ്ടതിൽ സന്തോഷം.', type: 'social' },
+      'NICE TO MEET YOU': { sentence: 'Nice to meet you.', malayalam: 'കണ്ടതിൽ സന്തോഷം.', type: 'social' },
+      'I FINE THANK_YOU': { sentence: 'I am doing fine, thank you.', malayalam: 'എനിക്ക് സുഖമാണ്, നന്ദി.', type: 'social' },
+      'I_LOVE_YOU': { sentence: 'I love you.', malayalam: 'ഞാൻ നിന്നെ സ്നേഹിക്കുന്നു.', type: 'affection' },
+    };
+
+    if (PATTERNS[key]) {
+      return PATTERNS[key];
+    }
+
+    // Generic ISL Question Inversion: If sentence ends with WHAT, WHERE, WHEN, WHY, HOW
+    const lastWord = clean[clean.length - 1];
+    if (['WHAT', 'WHERE', 'WHEN', 'WHY', 'HOW'].includes(lastWord)) {
+      const subject = clean.slice(0, -1).map(w => w.replace('_', ' ').toLowerCase()).join(' ');
+      const qWord = lastWord.charAt(0).toUpperCase() + lastWord.slice(1).toLowerCase();
+      return {
+        sentence: `${qWord} is ${subject || 'that'}?`,
+        malayalam: '',
+        type: 'question'
+      };
+    }
+
+    // Generic SOV to English assembly
+    const words = clean.map(w => w.replace('_', ' ').toLowerCase());
+    return {
+      sentence: words.join(' ').charAt(0).toUpperCase() + words.join(' ').slice(1) + '.',
+      malayalam: '',
+      type: 'statement'
+    };
+  }
+
+  _finalizeContinuousSentence() {
+    if (this.continuousSentenceTokens.length === 0) return;
+    const translation = this.translateContinuousSequence(this.continuousSentenceTokens);
+    this.currentSentenceText = translation.sentence;
+    this.currentMalayalamText = translation.malayalam || '';
+  }
+
+  /**
    * Orientation-independent 3D joint geometry, normalized distances, and bounding-box aspect ratio
-   * Incorporates principles from imRishabhGupta ISL classification
    */
   _analyzeHandGeometry(lm) {
     if (!lm || lm.length < 21) {
@@ -269,11 +465,8 @@ class SignRecognizer {
 
     const dist3D = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, (a.z || 0) - (b.z || 0));
     const wrist = lm[0];
-
-    // Normalized hand span: distance from wrist to middle finger MCP (knuckle #9)
     const handSpan = dist3D(wrist, lm[9]) || 0.12;
 
-    // Detect extension for all fingers
     const isFingerExtended = (mcpIdx, pipIdx, tipIdx) => {
       const mcp = lm[mcpIdx];
       const pip = lm[pipIdx];
@@ -282,7 +475,6 @@ class SignRecognizer {
       const dPipMcp = dist3D(pip, mcp);
       const dTipWrist = dist3D(tip, wrist);
       const dPipWrist = dist3D(pip, wrist);
-
       return (dTipMcp > dPipMcp * 1.25) || (dTipWrist > dPipWrist * 1.15);
     };
 
@@ -291,7 +483,6 @@ class SignRecognizer {
     const ringExt   = isFingerExtended(13, 14, 16);
     const pinkyExt  = isFingerExtended(17, 18, 20);
 
-    // Thumb extension analysis
     const thumbTip = lm[4];
     const thumbIP = lm[3];
     const thumbMCP = lm[2];
@@ -301,7 +492,6 @@ class SignRecognizer {
     const dThumbIndex = dist3D(thumbTip, indexMCP);
     const dThumbPinky = dist3D(thumbTip, pinkyMCP);
     const dIPIndex = dist3D(thumbIP, indexMCP);
-
     const thumbExt = (dThumbIndex > dIPIndex * 1.22) || (dThumbPinky > dist3D(thumbMCP, pinkyMCP) * 1.25);
 
     const fingers = {
@@ -314,7 +504,6 @@ class SignRecognizer {
 
     const openCount = [fingers.thumb, fingers.index, fingers.middle, fingers.ring, fingers.pinky].filter(x => x === 'extended').length;
 
-    // Bounding box aspect ratio (imRishabhGupta)
     const xs = lm.map(p => p.x);
     const ys = lm.map(p => p.y);
     const minX = Math.min(...xs), maxX = Math.max(...xs);
@@ -323,7 +512,6 @@ class SignRecognizer {
     const bboxH = maxY - minY;
     const aspectRatio = bboxW / (bboxH || 0.001);
 
-    // Normalized inter-fingertip distance ratios
     const spreadIndexMiddle = dist3D(lm[8], lm[12]) / handSpan;
     const spreadMiddleRing = dist3D(lm[12], lm[16]) / handSpan;
     const spreadRingPinky = dist3D(lm[16], lm[20]) / handSpan;
@@ -415,7 +603,6 @@ class SignRecognizer {
     const dy = last.wy - first.wy;
     const velocity = Math.hypot(dx, dy) / dt;
 
-    // Check oscillation in X (e.g. wagging / waving)
     let signFlips = 0;
     for (let i = 2; i < this.trajectoryHistory.length; i++) {
       const v1 = this.trajectoryHistory[i - 1].ix - this.trajectoryHistory[i - 2].ix;
@@ -434,7 +621,6 @@ class SignRecognizer {
 
   /**
    * Multi-Tier ISL Disambiguation & Scoring Engine
-   * Separates confusing clusters: D/R/U/V/K, M/N/S/E/A, G/H, P/Q, and Two-Handed ISL Standard
    */
   _scoreSignMatch(sign, analyzedHands, handLocation, twoHand, motion) {
     const dominant = analyzedHands[0];
@@ -443,11 +629,122 @@ class SignRecognizer {
     const f = dominant.fingers;
     const signId = sign.id;
     const openCount = dominant.openCount;
-    const span = dominant.handSpan;
     const spreadIM = dominant.spreadIndexMiddle;
-    const lm = dominant.landmarks;
 
-    // ── 1. ASL ILY vs ISL Fingerspelling (I-L-Y) Disambiguation ──
+    // ── 1. CORE CONTINUOUS CONVERSATIONAL SIGNS ──
+
+    // YOUR: Dominant index pointing forward or open palm facing conversational partner
+    if (signId === 'YOUR' || signId === 'PRO-2') {
+      const isPointingForward = (f.index === 'extended' && f.middle === 'folded' && f.ring === 'folded');
+      const isOpenPalmForward = (openCount >= 4 && motion.velocity < 0.28);
+      if ((isPointingForward || isOpenPalmForward) && (handLocation === 'chest' || handLocation === 'neutral')) {
+        return { score: 0.95, disambiguation: 'ISL Pronoun YOUR: Pointing/Palm forward to Person B' };
+      }
+    }
+
+    // NAME: Dominant Index + Middle extended tapping temple or touching non-dominant fingers
+    if (signId === 'NAME') {
+      const isTwoFingers = (f.index === 'extended' && f.middle === 'extended' && f.ring === 'folded' && f.pinky === 'folded');
+      const isOneFinger = (f.index === 'extended' && f.middle === 'folded' && f.ring === 'folded' && f.pinky === 'folded');
+      if (isTwoFingers && (handLocation === 'face' || twoHand.indexContact || twoHand.isContact)) {
+        return { score: 0.96, disambiguation: 'ISL Concept NAME: Dominant Index+Middle tapping Temple / Contact' };
+      }
+      if (isOneFinger && handLocation === 'face' && dominant.indexTip.y < 0.32) {
+        return { score: 0.92, disambiguation: 'ISL Concept NAME: Index tapping Temple' };
+      }
+    }
+
+    // WHAT: Palms up oscillating / wagging inquiry + NMM eyebrow furrow
+    if (signId === 'WHAT') {
+      if (openCount >= 4 && motion.isOscillating) {
+        return { score: 0.96, disambiguation: 'ISL What: Palms up oscillating inquiry' };
+      }
+      if (openCount >= 4 && handLocation === 'chest' && this.activeNMM.isBrowFurrowed) {
+        return { score: 0.93, disambiguation: 'ISL What: Furrowed Eyebrow Interrogative' };
+      }
+    }
+
+    // MY / ME: Flat palm on chest
+    if (signId === 'MY' || signId === 'PRO-1') {
+      if (openCount >= 4 && handLocation === 'chest' && motion.velocity < 0.20) {
+        return { score: 0.95, disambiguation: 'ISL Pronoun MY/ME: Flat Palm resting on Chest' };
+      }
+      if (f.index === 'extended' && f.middle === 'folded' && handLocation === 'chest') {
+        return { score: 0.92, disambiguation: 'ISL Pronoun ME/I: Index pointing to Chest' };
+      }
+    }
+
+    // WANT / NEED: Palms facing upward pulling inward
+    if (signId === 'WANT') {
+      if (openCount >= 4 && handLocation === 'chest') {
+        return { score: 0.92, disambiguation: 'ISL Verb WANT/NEED: Palms facing upward at Chest' };
+      }
+    }
+
+    // CALL: Y-handshape near ear / phone
+    if (signId === 'CALL') {
+      if (f.thumb === 'extended' && f.pinky === 'extended' && f.index === 'folded' && handLocation === 'face') {
+        return { score: 0.95, disambiguation: 'ISL Verb CALL: Phone Handshape at Ear/Face' };
+      }
+    }
+
+    // TIME: Index finger tapping non-dominant wrist
+    if (signId === 'TIME') {
+      if (twoHand.isContact && f.index === 'extended') {
+        return { score: 0.94, disambiguation: 'ISL Concept TIME: Index tapping Watch/Wrist' };
+      }
+    }
+
+    // WHERE: Index finger wagging left and right
+    if (signId === 'WHERE') {
+      if (f.index === 'extended' && f.middle === 'folded' && motion.isOscillating) {
+        return { score: 0.94, disambiguation: 'ISL Where: Index wagging search' };
+      }
+    }
+
+    // WHEN: Index circling index
+    if (signId === 'WHEN') {
+      if (twoHand.isTwoHanded && f.index === 'extended' && motion.isOscillating) {
+        return { score: 0.92, disambiguation: 'ISL Question WHEN: Index circling non-dominant index' };
+      }
+    }
+
+    // WHY: Index at temple pulling down
+    if (signId === 'WHY') {
+      if (handLocation === 'face' && f.index === 'extended' && motion.velocity > 0.15) {
+        return { score: 0.92, disambiguation: 'ISL Question WHY: Index at Forehead pulling down' };
+      }
+    }
+
+    // HEAD / HEADACHE
+    if (signId === 'HEAD') {
+      if (handLocation === 'face' && motion.velocity < 0.22) {
+        return { score: 0.92, disambiguation: 'ISL Symptom HEAD: Hand touching Temple' };
+      }
+    }
+
+    // STOMACH
+    if (signId === 'STOMACH') {
+      if (dominant.wrist.y > 0.65 && openCount >= 3) {
+        return { score: 0.91, disambiguation: 'ISL Symptom STOMACH: Hand on Abdomen' };
+      }
+    }
+
+    // HOW ARE YOU
+    if (signId === 'HOW_ARE_YOU') {
+      if (twoHand.isTwoHanded && openCount >= 4 && motion.velocity > 0.20) {
+        return { score: 0.94, disambiguation: 'ISL Inquiry HOW ARE YOU: Two hands opening forward' };
+      }
+    }
+
+    // NICE TO MEET YOU
+    if (signId === 'NICE_TO_MEET_YOU') {
+      if (twoHand.indexContact && (openCount >= 3 || f.index === 'extended')) {
+        return { score: 0.93, disambiguation: 'ISL Greeting NICE TO MEET YOU: Two index fingers meeting' };
+      }
+    }
+
+    // ASL ILY vs ISL Fingerspelling (I-L-Y) Disambiguation
     if (signId === 'I_LOVE_YOU') {
       if (f.thumb === 'extended' && f.index === 'extended' && f.pinky === 'extended' &&
           f.middle === 'folded' && f.ring === 'folded') {
@@ -458,6 +755,7 @@ class SignRecognizer {
       }
     }
 
+    // Fingerspelling I, L, Y
     if (signId === 'LETTER_I') {
       if (f.pinky === 'extended' && f.index === 'folded' && f.middle === 'folded' && f.ring === 'folded' && f.thumb === 'folded') {
         return { score: 0.96, disambiguation: 'Fingerspelling: Isolated Pinky Extended' };
@@ -476,7 +774,7 @@ class SignRecognizer {
       }
     }
 
-    // ── 2. Two-Handed Authentic ISL Standard (ISLRTC) Alphabet Disambiguation ──
+    // Two-Handed Authentic ISL Standard (ISLRTC)
     if (twoHand.isTwoHanded) {
       if (signId === 'LETTER_A' && twoHand.dominantIndexOnThumb) {
         return { score: 0.95, disambiguation: 'ISL Standard: Dominant Index touches Non-Dominant Thumb' };
@@ -504,11 +802,8 @@ class SignRecognizer {
       }
     }
 
-    // ── 3. Single-Handed ISL Alphabet Disambiguation (emnikhil + imRishabhGupta) ──
-
-    // Cluster: D vs R vs U vs V vs K
+    // Single-Handed ISL Alphabet Disambiguation
     if (signId === 'LETTER_U') {
-      // Index + Middle extended parallel, touching together (spreadIM < 0.28)
       if (f.index === 'extended' && f.middle === 'extended' && f.ring === 'folded' && f.pinky === 'folded') {
         if (spreadIM < 0.28) {
           return { score: 0.95, disambiguation: `Fingerspelling U: Index & Middle touching (Spread: ${spreadIM.toFixed(2)})` };
@@ -517,7 +812,6 @@ class SignRecognizer {
     }
 
     if (signId === 'LETTER_V' || signId === 'NUM_2') {
-      // Index + Middle extended spread apart in a V (spreadIM >= 0.35)
       if (f.index === 'extended' && f.middle === 'extended' && f.ring === 'folded' && f.pinky === 'folded') {
         if (spreadIM >= 0.32) {
           return { score: 0.95, disambiguation: `Fingerspelling V: Index & Middle spread (Spread: ${spreadIM.toFixed(2)})` };
@@ -526,7 +820,6 @@ class SignRecognizer {
     }
 
     if (signId === 'LETTER_R') {
-      // Index + Middle extended crossed (crossing X coordinates)
       if (f.index === 'extended' && f.middle === 'extended' && f.ring === 'folded' && f.pinky === 'folded') {
         const isCrossed = Math.abs(dominant.indexTip.x - dominant.middleTip.x) < 0.035;
         if (isCrossed) {
@@ -536,72 +829,60 @@ class SignRecognizer {
     }
 
     if (signId === 'LETTER_K') {
-      // Index pointing up, middle forward/bent, thumb between them
       if (f.index === 'extended' && (f.middle === 'extended' || f.middle === 'folded') && dominant.distThumbMiddle < 0.32) {
         return { score: 0.91, disambiguation: 'Fingerspelling K: Thumb resting between knuckles' };
       }
     }
 
     if (signId === 'LETTER_D' || signId === 'NUM_1') {
-      // Only Index extended upright, thumb loop on middle tip
       if (f.index === 'extended' && f.middle === 'folded' && f.ring === 'folded' && f.pinky === 'folded') {
         return { score: 0.94, disambiguation: 'Fingerspelling D: Upright Index with Thumb-Middle Loop' };
       }
     }
 
-    // Cluster: M vs N vs S vs A vs E vs T (Fist & Knuckle Disambiguation)
     if (signId === 'LETTER_A') {
-      // Closed fist with upright thumb beside index knuckle
       if (f.thumb === 'extended' && f.index === 'folded' && f.middle === 'folded' && f.ring === 'folded' && f.pinky === 'folded') {
         return { score: 0.93, disambiguation: 'Fingerspelling A: Fist with upright lateral thumb' };
       }
     }
 
     if (signId === 'LETTER_S') {
-      // Fist with thumb wrapped across front of middle knuckles
       if (openCount === 0 && dominant.aspectRatio >= 0.70 && dominant.aspectRatio <= 1.25) {
         return { score: 0.92, disambiguation: 'Fingerspelling S: Compact Fist with Front-wrapped Thumb' };
       }
     }
 
     if (signId === 'LETTER_E') {
-      // All fingertips curled claws touching thumb tip
       if (openCount === 0 && dominant.distThumbIndex < 0.28) {
         return { score: 0.91, disambiguation: 'Fingerspelling E: Curled fingertips touching thumb tip' };
       }
     }
 
     if (signId === 'LETTER_T') {
-      // Thumb tucked between index and middle knuckles
       if (openCount === 0 && dominant.distThumbIndex < 0.35) {
         return { score: 0.88, disambiguation: 'Fingerspelling T: Thumb tucked between index & middle' };
       }
     }
 
     if (signId === 'LETTER_M') {
-      // Three fingers folded over thumb
       if (openCount <= 1 && dominant.distThumbRing < 0.35) {
         return { score: 0.89, disambiguation: 'Fingerspelling M: 3 fingers folded over thumb' };
       }
     }
 
     if (signId === 'LETTER_N') {
-      // Two fingers folded over thumb
       if (openCount <= 1 && dominant.distThumbMiddle < 0.35) {
         return { score: 0.89, disambiguation: 'Fingerspelling N: 2 fingers folded over thumb' };
       }
     }
 
-    // Cluster: B vs C vs F vs W vs O
     if (signId === 'LETTER_B' || signId === 'NUM_4') {
-      // 4 upright fingers, thumb folded
       if (f.index === 'extended' && f.middle === 'extended' && f.ring === 'extended' && f.pinky === 'extended' && f.thumb === 'folded') {
         return { score: 0.95, disambiguation: 'Fingerspelling B: 4 extended upright fingers' };
       }
     }
 
     if (signId === 'LETTER_C') {
-      // Curved C hand
       if (f.thumb === 'extended' && f.index === 'extended' && f.middle === 'folded' && f.ring === 'folded' && f.pinky === 'folded') {
         if (dominant.distThumbIndex < 0.38) {
           return { score: 0.92, disambiguation: 'Fingerspelling C: Open Curved Thumb & Index' };
@@ -610,27 +891,23 @@ class SignRecognizer {
     }
 
     if (signId === 'LETTER_F' || signId === 'NUM_9') {
-      // Index touches thumb, other 3 extended upright
       if (f.index === 'folded' && f.middle === 'extended' && f.ring === 'extended' && f.pinky === 'extended') {
         return { score: 0.94, disambiguation: 'Fingerspelling F: OK Ring with 3 upright fingers' };
       }
     }
 
     if (signId === 'LETTER_W' || signId === 'NUM_3') {
-      // Index, Middle, Ring extended upright apart
       if (f.index === 'extended' && f.middle === 'extended' && f.ring === 'extended' && f.pinky === 'folded' && f.thumb === 'folded') {
         return { score: 0.95, disambiguation: 'Fingerspelling W: 3 extended upright fingers (W form)' };
       }
     }
 
     if (signId === 'LETTER_O' || signId === 'NUM_0') {
-      // All fingertips touching thumb tip forming round 'O'
       if (dominant.distThumbIndex < 0.25 && dominant.distThumbMiddle < 0.28) {
         return { score: 0.92, disambiguation: 'Fingerspelling O: Round O Circle with thumb' };
       }
     }
 
-    // Remaining Alphabets: G, H, J, P, Q, X, Z
     if (signId === 'LETTER_G') {
       if (f.index === 'extended' && f.thumb === 'extended' && f.middle === 'folded' && f.ring === 'folded' && f.pinky === 'folded') {
         return { score: 0.91, disambiguation: 'Fingerspelling G: Horizontal Index & Thumb' };
@@ -655,32 +932,13 @@ class SignRecognizer {
       }
     }
 
-    // Numbers: NUM_5, NUM_6, NUM_7, NUM_8
     if (signId === 'NUM_5') {
       if (openCount === 5) {
         return { score: 0.95, disambiguation: 'ISL Number 5: Open Hand (All 5 Fingers)' };
       }
     }
 
-    if (signId === 'NUM_6') {
-      if (f.index === 'extended' && f.middle === 'extended' && f.ring === 'extended' && dominant.distThumbPinky < 0.28) {
-        return { score: 0.91, disambiguation: 'ISL Number 6: Thumb touches Pinky' };
-      }
-    }
-
-    if (signId === 'NUM_7') {
-      if (f.index === 'extended' && f.middle === 'extended' && f.pinky === 'extended' && dominant.distThumbRing < 0.28) {
-        return { score: 0.91, disambiguation: 'ISL Number 7: Thumb touches Ring finger' };
-      }
-    }
-
-    if (signId === 'NUM_8') {
-      if (f.index === 'extended' && f.ring === 'extended' && f.pinky === 'extended' && dominant.distThumbMiddle < 0.28) {
-        return { score: 0.91, disambiguation: 'ISL Number 8: Thumb touches Middle finger' };
-      }
-    }
-
-    // ── 4. Core Conversational & Medical ISL Signs ──
+    // Healthcare & Everyday Needs
     if (signId === 'YES') {
       if (f.thumb === 'extended' && f.index === 'folded' && f.middle === 'folded' && f.ring === 'folded' && f.pinky === 'folded') {
         return { score: 0.95, disambiguation: 'ISL Yes: Thumbs-Up / Fist Nod' };
@@ -730,7 +988,7 @@ class SignRecognizer {
 
     if (signId === 'DOCTOR') {
       if (twoHand.isContact || twoHand.wristDistance < 0.22) {
-        return { score: 0.92, disambiguation: 'ISL Doctor: Fingers feeling wrist pulse' };
+        return { score: 0.93, disambiguation: 'ISL Doctor: Fingers feeling wrist pulse' };
       }
     }
 
@@ -742,45 +1000,28 @@ class SignRecognizer {
 
     if (signId === 'HELP') {
       if (twoHand.isTwoHanded && twoHand.wristDistance < 0.26) {
-        return { score: 0.89, disambiguation: 'ISL Help: Fist lifted on open palm' };
+        return { score: 0.90, disambiguation: 'ISL Help: Fist lifted on open palm' };
       }
     }
 
     if (signId === 'PAIN') {
       if (f.index === 'extended' && f.middle === 'folded' && (twoHand.isTwoHanded || motion.isOscillating)) {
-        return { score: 0.90, disambiguation: 'ISL Pain: Index fingers twisting in opposition' };
-      }
-    }
-
-    if (signId === 'WHAT') {
-      if (openCount >= 4 && motion.isOscillating) {
-        return { score: 0.93, disambiguation: 'ISL What: Palms up oscillating inquiry' };
-      }
-    }
-
-    if (signId === 'WHERE') {
-      if (f.index === 'extended' && f.middle === 'folded' && motion.isOscillating) {
-        return { score: 0.93, disambiguation: 'ISL Where: Index wagging search' };
+        return { score: 0.91, disambiguation: 'ISL Pain: Index fingers twisting in opposition' };
       }
     }
 
     return { score: 0.0, disambiguation: '' };
   }
 
-  // ── 5. Fingerspelling Word Assembler & Predictive Suggestion Methods (emnikhil) ──
-
+  // Fingerspelling Word Assembler & Predictive Methods
   getWordBuffer() {
     return this.wordBuffer;
   }
 
-  /**
-   * Return top matching predictive word suggestions given current word buffer prefix
-   */
   getWordPredictions(maxResults = 4) {
     const prefix = this.wordBuffer.trim().toUpperCase();
     if (!prefix) {
-      // Suggest high-frequency medical/emergency words by default
-      return ['HELP', 'DOCTOR', 'WATER', 'PAIN'];
+      return ['YOUR', 'NAME', 'HELP', 'DOCTOR'];
     }
 
     const matches = this.predictiveDictionary.filter(w => w.startsWith(prefix) && w !== prefix);
@@ -788,14 +1029,10 @@ class SignRecognizer {
       return matches.slice(0, maxResults);
     }
 
-    // Substring matches fallback
     const subMatches = this.predictiveDictionary.filter(w => !matches.includes(w) && w.includes(prefix) && w !== prefix);
     return [...matches, ...subMatches].slice(0, maxResults);
   }
 
-  /**
-   * Commit the currently typed word buffer into the confirmed sign sequence
-   */
   commitCurrentWord(source = 'manual') {
     const word = this.wordBuffer.trim().toUpperCase();
     if (word.length === 0) return null;
@@ -812,22 +1049,22 @@ class SignRecognizer {
     };
 
     this.signSequence.push(confirmedWord);
+    this.continuousSentenceTokens.push(word);
     this.wordBuffer = '';
+
+    const translation = this.translateContinuousSequence(this.continuousSentenceTokens);
+    this.currentSentenceText = translation.sentence;
+    this.currentMalayalamText = translation.malayalam || '';
+
     return confirmedWord;
   }
 
-  /**
-   * Apply a selected predictive suggestion chip (e.g. user clicks "DOCTOR")
-   */
   applySuggestion(chosenWord) {
     if (!chosenWord) return null;
     this.wordBuffer = chosenWord.toUpperCase();
     return this.commitCurrentWord('suggestion_chip');
   }
 
-  /**
-   * Backspace: delete last letter from wordBuffer, or delete last sign if buffer is empty
-   */
   backspace() {
     if (this.wordBuffer.length > 0) {
       this.wordBuffer = this.wordBuffer.slice(0, -1);
@@ -835,6 +1072,12 @@ class SignRecognizer {
     }
     if (this.signSequence.length > 0) {
       const removed = this.signSequence.pop();
+      if (this.continuousSentenceTokens.length > 0) {
+        this.continuousSentenceTokens.pop();
+        const translation = this.translateContinuousSequence(this.continuousSentenceTokens);
+        this.currentSentenceText = translation.sentence;
+        this.currentMalayalamText = translation.malayalam || '';
+      }
       return { type: 'sign_removed', removedSign: removed };
     }
     return null;
@@ -846,12 +1089,17 @@ class SignRecognizer {
 
   clearSequence() {
     this.signSequence = [];
+    this.continuousSentenceTokens = [];
     this.wordBuffer = '';
     this.lastConfirmedSign = null;
     this.currentCandidate = null;
     this.holdProgress = 0;
     this.trajectoryHistory = [];
+    this.recentVelocities = [];
     this.blankStartTime = 0;
+    this.sentenceFinalized = false;
+    this.currentSentenceText = '';
+    this.currentMalayalamText = '';
   }
 
   getLastConfirmedSign() {

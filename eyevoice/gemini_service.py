@@ -47,7 +47,7 @@ def _get_gemini_api_key() -> str:
 
 
 # Preferred fast models
-MODELS = ["gemini-flash-lite-latest", "gemini-2.5-flash", "gemini-flash-latest"]
+MODELS = ["gemini-3.5-flash", "gemini-flash-lite-latest", "gemini-flash-latest"]
 
 
 def call_gemini(prompt: str, json_mode: bool = True, timeout: int = 8) -> dict[str, Any] | str | None:
@@ -223,8 +223,8 @@ def _local_fallback_options(cue: str, context: str) -> dict[str, Any]:
     }
 
 
-# Vision-capable models (flash-lite does NOT support images well)
-VISION_MODELS = ["gemini-2.5-flash", "gemini-flash-latest"]
+# Vision-capable models
+VISION_MODELS = ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-flash-latest"]
 
 
 def call_gemini_vision(
@@ -234,6 +234,16 @@ def call_gemini_vision(
     timeout: int = 12,
 ) -> dict[str, Any] | str | None:
     """Call Google Gemini Vision API with a base64-encoded JPEG image and text prompt."""
+    return call_gemini_vision_sequence([image_base64], prompt, json_mode=json_mode, timeout=timeout)
+
+
+def call_gemini_vision_sequence(
+    images_base64: list[str],
+    prompt: str,
+    json_mode: bool = True,
+    timeout: int = 15,
+) -> dict[str, Any] | str | None:
+    """Call Google Gemini Vision API with multiple consecutive video frames for continuous signing analysis."""
     api_key = _get_gemini_api_key()
     if not api_key:
         return None
@@ -243,20 +253,21 @@ def call_gemini_vision(
         "X-goog-api-key": api_key,
     }
 
-    body: dict[str, Any] = {
-        "contents": [
-            {
-                "parts": [
-                    {
-                        "inlineData": {
-                            "mimeType": "image/jpeg",
-                            "data": image_base64,
-                        }
-                    },
-                    {"text": prompt},
-                ]
+    parts: list[dict[str, Any]] = []
+    for img in images_base64:
+        clean_img = img
+        if "," in clean_img:
+            clean_img = clean_img.split(",", 1)[1]
+        parts.append({
+            "inlineData": {
+                "mimeType": "image/jpeg",
+                "data": clean_img,
             }
-        ],
+        })
+    parts.append({"text": prompt})
+
+    body: dict[str, Any] = {
+        "contents": [{"parts": parts}],
     }
     if json_mode:
         body["generationConfig"] = {"responseMimeType": "application/json"}
@@ -271,9 +282,9 @@ def call_gemini_vision(
                 data = json.loads(resp.read().decode("utf-8"))
                 candidates = data.get("candidates", [])
                 if candidates:
-                    parts = candidates[0].get("content", {}).get("parts", [])
-                    if parts:
-                        text = parts[0].get("text", "").strip()
+                    p_list = candidates[0].get("content", {}).get("parts", [])
+                    if p_list:
+                        text = p_list[0].get("text", "").strip()
                         if json_mode:
                             try:
                                 return json.loads(text)
@@ -281,7 +292,6 @@ def call_gemini_vision(
                                 return {"raw": text}
                         return text
         except urllib.error.HTTPError:
-            # Try next model if 404 or rate-limited
             continue
         except Exception:
             continue
@@ -330,6 +340,50 @@ If no sign is being made (e.g. hands relaxed at side, empty frame, or resting):
 def interpret_sign_frame(image_base64: str) -> dict[str, Any] | None:
     """Convenience wrapper: interpret a webcam frame for sign language gestures."""
     return call_gemini_vision(image_base64, _SIGN_INTERPRET_PROMPT, json_mode=True, timeout=12)
+
+
+_CONTINUOUS_ISL_PROMPT = """You are an expert, certified Indian Sign Language (ISL) interpreter evaluating a sequence of video frames capturing continuous Indian Sign Language (ISL) signing.
+
+ISL has distinct linguistic and syntactic features:
+- Sentence Structure: Subject-Object-Verb (SOV) and Topic-Comment order.
+- Interrogatives (WH-Questions): Question signs (WHAT, WHERE, WHEN, WHY, HOW) appear at the END of the sentence (e.g. [YOUR] [NAME] [WHAT] translates to "What is your name?").
+- Non-Manual Markers (NMM): Eyebrow furrowing/lowering signals WH-questions; eyebrow raising signals Yes/No questions; headshakes signal negation.
+- Two-Handed Contacts: Many core ISL signs involve contact between dominant and non-dominant hands (ISLRTC National Standards).
+
+Look at the progression across these sequential frames:
+1. Track how the hands move from the initial gesture through the intermediate stroke(s) to the final position.
+2. Observe facial expressions (eyebrows, head angle).
+3. Identify each individual sign gloss in temporal sequence (e.g. ["YOUR", "NAME", "WHAT"]).
+4. Translate the complete intended continuous sentence into natural, fluent English and Malayalam.
+
+Output ONLY a JSON object:
+{
+  "detected": true,
+  "sentence": "Natural, complete English sentence (e.g. 'What is your name?')",
+  "malayalam": "സ്വാഭാവിക മലയാളം വാചകം (e.g. 'നിങ്ങളുടെ പേരെന്താണ്?')",
+  "glosses": ["YOUR", "NAME", "WHAT"],
+  "sentence_type": "question",
+  "confidence": 95,
+  "explanation": "Signer points forward (YOUR), taps temple (NAME), and holds open palms up with furrowed brows (WHAT)."
+}
+
+If no continuous signs or sentences are being communicated:
+{
+  "detected": false,
+  "sentence": "",
+  "malayalam": "",
+  "glosses": [],
+  "sentence_type": "none",
+  "confidence": 0,
+  "explanation": "No active signing movement identified in frame sequence."
+}"""
+
+
+def interpret_continuous_signing(images_base64: list[str]) -> dict[str, Any] | None:
+    """Analyze a multi-frame continuous video burst and output a complete translated sentence."""
+    if not images_base64:
+        return None
+    return call_gemini_vision_sequence(images_base64, _CONTINUOUS_ISL_PROMPT, json_mode=True, timeout=15)
 
 
 if __name__ == "__main__":
