@@ -15,15 +15,15 @@
         <span>⇄</span> <span id="topbar-mode-label">Mode: Select</span>
       </button>
       <!-- PERMANENT BACK BUTTON: ALWAYS VISIBLE EVERYWHERE AT ALL TIMES -->
-      <button id="perm-back-btn" class="btn-perm-back" onclick="goHome()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" title="Permanent Back / Return to Home Dashboard">
+      <button id="perm-back-btn" class="btn-perm-back" onclick="goHome()" title="Permanent Back / Return to Home Dashboard">
         <div class="dwell-progress-bar"></div>
         ⬅ BACK / HOME
       </button>
       <button class="badge-mode active-gaze" id="gaze-mode-btn" onclick="toggleGazeSource()" title="Switch between Browser Webcam Eye Tracking and Click/Touch Mode">
         👁️ Gaze: WEBCAM LIVE
       </button>
-      <button class="badge-mode" id="dwell-toggle-btn" onclick="toggleDwellMode()" title="Toggle Auto-Click when resting gaze on a card">
-        ⏱️ Dwell Click: ON (0.8s)
+      <button class="badge-mode" id="dwell-toggle-btn" onclick="toggleDwellMode()" title="Toggle Auto-Click when resting gaze on a card" style="color:var(--text-muted);">
+        ⏱️ Auto-Click: OFF (Click/Spacebar)
       </button>
       <button class="badge-mode btn-calib-action" id="quick-calib-btn" onclick="recenterGaze()" title="Lock eye tracking to screen center (1 second)">
         🎯 Calibrate (1s)
@@ -58,7 +58,7 @@
   <nav id="breadcrumb">
     <div class="nav-left">
       <button id="home-btn" class="breadcrumb-item active" onclick="goHome()">🏠 Home</button>
-      <button id="btn-persistent-back" class="btn-top-back hidden" onclick="goHome()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" title="Click or rest gaze here to go back">
+      <button id="btn-persistent-back" class="btn-top-back hidden" onclick="goHome()" title="Click to go back">
         <div class="dwell-progress-bar"></div>
         ⬅ BACK TO DASHBOARD
       </button>
@@ -66,14 +66,13 @@
       <span id="breadcrumb-current" class="breadcrumb-item breadcrumb-active" style="display:none"></span>
     </div>
     <div class="nav-hints">
-      <span class="hint-key" style="color:var(--good);font-weight:700;">◀ Look Left to go Back</span>
       <span class="hint-key">Gesture: Left ➔ Right ➔ Left</span>
       <span class="hint-key"><kbd>Esc</kbd> / <kbd>Backspace</kbd></span>
     </div>
   </nav>
 
   <!-- ===== PERMANENT LEFT EDGE LOOK-TO-BACK ZONE ===== -->
-  <div id="left-edge-back" class="left-edge-back" onclick="goHome()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" title="Permanent: Rest gaze on left edge of screen anytime to return home">
+  <div id="left-edge-back" class="left-edge-back" onclick="goHome()" title="Permanent: Click or look to left edge anytime to return home">
     <div class="dwell-progress-bar-vertical"></div>
     <div class="edge-back-content">
       <span class="edge-icon">◀</span>
@@ -337,11 +336,11 @@
         </div>
 
         <div class="keyboard-actions" style="display:flex;gap:14px;margin-top:16px;">
-          <button class="btn-launch-keyboard" id="launch-keyboard-btn" onclick="launchTeammateKeyboard()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)">
+          <button class="btn-launch-keyboard" id="launch-keyboard-btn" onclick="launchTeammateKeyboard()">
             <div class="dwell-progress-bar"></div>
             🚀 Launch Eye-Tracking Keyboard Window
           </button>
-          <button class="btn-perm-back" onclick="closeKeyboardModal()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" style="font-size:1.05rem;padding:14px 22px;">
+          <button class="btn-perm-back" onclick="closeKeyboardModal()" style="font-size:1.05rem;padding:14px 22px;">
             <div class="dwell-progress-bar"></div>
             ⬅ BACK TO DASHBOARD
           </button>
@@ -400,11 +399,11 @@
         </div>
 
         <div class="isl-review-actions">
-          <button class="btn-isl-speak-lg" onclick="confirmAndSpeakISLFromModal()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)">
+          <button class="btn-isl-speak-lg" onclick="confirmAndSpeakISLFromModal()">
             <div class="dwell-progress-bar"></div>
             🔊 Confirm &amp; Speak Aloud
           </button>
-          <button class="btn-secondary" onclick="closeISLReviewModal()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)">
+          <button class="btn-secondary" onclick="closeISLReviewModal()">
             <div class="dwell-progress-bar"></div>
             ⬅ Return to Composer
           </button>

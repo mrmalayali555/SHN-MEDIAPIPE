@@ -29,21 +29,25 @@ let islSelectedAnchor = 'forehead'; // Practical body anchor: forehead, mouth, c
 let focusedIndex = 0;
 let focusableElements = [];
 
-// Eye Gaze Dwell-Timer Selection State
-let dwellEnabled = true;
-const DWELL_TIME_MS = 1400; // 1.4 seconds deliberate resting gaze to select
+// Eye Gaze Dwell-Timer Selection State (Safe by default: OFF to prevent accidental touches)
+let dwellEnabled = false;
+const DWELL_TIME_MS = 2200; // 2.2 seconds deliberate resting gaze to select when enabled
 let dwellTimer = null;
 let dwellAnimFrame = null;
 let activeDwellCard = null;
+let lastClickTimestamp = 0;
+let gazeStabilizeStartTime = 0;
+let candidateGazeCard = null;
 
 function toggleDwellMode() {
   dwellEnabled = !dwellEnabled;
+  cancelDwell();
   const btn = document.getElementById('dwell-toggle-btn');
   if (btn) {
-    btn.textContent = dwellEnabled ? '⏱️ Eye Dwell Click: ON (1.4s)' : '⏱️ Eye Dwell Click: OFF';
+    btn.textContent = dwellEnabled ? '⏱️ Auto-Click: ON (2.2s)' : '⏱️ Auto-Click: OFF (Manual Click/Space)';
     btn.style.color = dwellEnabled ? 'var(--good)' : 'var(--text-muted)';
   }
-  showToast(dwellEnabled ? "Eye Dwell auto-selection enabled" : "Eye Dwell selection disabled (use click/enter)");
+  showToast(dwellEnabled ? "Auto-click enabled (Rest gaze for 2.2s to select)" : "Auto-click DISABLED (Use mouse click, tap, or spacebar)");
 }
 
 let audioCtx = null;
@@ -67,6 +71,9 @@ function playClickChime() {
 
 function startDwell(cardEl) {
   if (!dwellEnabled || !cardEl) return;
+  // Post-click grace cooldown: prevent cascade clicking new screens
+  if (performance.now() - lastClickTimestamp < 1400) return;
+
   cancelDwell();
 
   activeDwellCard = cardEl;
@@ -81,7 +88,11 @@ function startDwell(cardEl) {
   const startTime = performance.now();
 
   function step(now) {
-    if (activeDwellCard !== cardEl) return;
+    if (activeDwellCard !== cardEl || !dwellEnabled) {
+      if (hBar) hBar.style.width = '0%';
+      if (vBar) vBar.style.height = '0%';
+      return;
+    }
     const elapsed = now - startTime;
     const progress = Math.min(100, (elapsed / DWELL_TIME_MS) * 100);
     if (hBar) hBar.style.width = progress + '%';
@@ -91,6 +102,7 @@ function startDwell(cardEl) {
       if (hBar) hBar.style.width = '0%';
       if (vBar) vBar.style.height = '0%';
       activeDwellCard = null;
+      lastClickTimestamp = performance.now();
       playClickChime();
       cardEl.click();
     } else {
@@ -256,20 +268,20 @@ function checkEyeGestureBack(normX) {
   const now = performance.now();
   if (now < gestureCooldownUntil) return;
 
-  // Direct Method 1: Just look to the left side of the screen for 0.7s -> INSTANT BACK!
+  // Direct Method 1: Deliberate look to extreme left edge bezel for 1.8s (prevents accidental triggers while reading left-side cards)
   const edgeBack = document.getElementById('left-edge-back');
   const edgeBar = document.querySelector('.dwell-progress-bar-vertical');
-  if (normX < 0.28) {
+  if (normX < 0.06) {
     if (!lookLeftStartTime) lookLeftStartTime = now;
     const elapsed = now - lookLeftStartTime;
     if (edgeBack) edgeBack.classList.add('active-dwell');
-    if (edgeBar) edgeBar.style.height = Math.min(100, (elapsed / 700) * 100) + '%';
+    if (edgeBar) edgeBar.style.height = Math.min(100, (elapsed / 1800) * 100) + '%';
 
-    if (elapsed >= 700) {
+    if (elapsed >= 1800) {
       lookLeftStartTime = 0;
       if (edgeBar) edgeBar.style.height = '0%';
       gestureCooldownUntil = now + 1500;
-      triggerBackGesture("Look-Left");
+      triggerBackGesture("Left-Edge Look");
       return;
     }
   } else {
@@ -393,17 +405,15 @@ function handleGazeData(data) {
   smoothX = smoothX * 0.15 + targetX * 0.85;
   smoothY = smoothY * 0.15 + targetY * 0.85;
 
-  // 3. AAC Assisted Magnetic Target Lock
+  // 3. AAC Assisted Soft Target Snapping
   const magneticHit = findMagneticTarget(smoothX, smoothY);
   let card = null;
 
   if (magneticHit) {
     card = magneticHit.el;
-    // Magnetic Attraction: gently center the reticle on the card
-    const pullX = smoothX * 0.25 + magneticHit.cx * 0.75;
-    const pullY = smoothY * 0.25 + magneticHit.cy * 0.75;
-    reticle.style.left = pullX + 'px';
-    reticle.style.top = pullY + 'px';
+    // Gentle highlight alignment (smooth reticle without forceful drag)
+    reticle.style.left = smoothX + 'px';
+    reticle.style.top = smoothY + 'px';
     reticle.classList.add('magnetic-locked');
   } else {
     reticle.style.left = smoothX + 'px';
@@ -419,17 +429,12 @@ function handleGazeData(data) {
       }
       lastGazeCard = card;
       card.classList.add('focused');
-      startDwell(card);
-    }
-
-    // Voluntary Single Blink Confirmation (only when deliberately looking at card > 300ms)
-    if (data.blink && blinkCounter === 1 && !systemTrackingPaused && activeDwellCard === card) {
-      const dwellElapsed = performance.now() - (window.currentDwellStartTime || 0);
-      if (dwellElapsed > 300) {
-        cancelDwell(card);
-        playClickChime();
-        card.click();
-        showToast("Blink Confirmed!");
+      candidateGazeCard = card;
+      gazeStabilizeStartTime = performance.now();
+    } else {
+      // Deliberate Fixation Threshold: Gaze must stabilize on card for >350ms before dwell begins
+      if (dwellEnabled && !activeDwellCard && performance.now() - gazeStabilizeStartTime > 350) {
+        startDwell(card);
       }
     }
   } else {
@@ -438,43 +443,35 @@ function handleGazeData(data) {
       cancelDwell(lastGazeCard);
       lastGazeCard = null;
     }
+    candidateGazeCard = null;
+    gazeStabilizeStartTime = 0;
   }
 }
 
-// ── AAC Assisted Magnetic Target Snapping ──
+// ── AAC Assisted Target Bounds Verification (No Sticky Trapping) ──
 function findMagneticTarget(x, y) {
-  // If already locked on a card, keep it locked until gaze moves > 100px away
-  if (lastGazeCard && lastGazeCard.isConnected) {
-    const rect = lastGazeCard.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const dist = Math.hypot(x - cx, y - cy);
-    const holdRadius = Math.max(rect.width, rect.height) * 0.72 + 50;
-    if (dist < holdRadius) {
-      return { el: lastGazeCard, cx, cy };
-    }
-  }
-
-  // Find nearest interactive AAC card/button within 85px
+  // A card is targeted ONLY if the gaze position (x, y) is actually inside the card's bounding box
   const selector = '.card, .isl-board-card, .isl-anchor-btn, .btn-perm-back, .isl-ai-pill, .isl-body-region-btn, .btn-quick';
   const candidates = document.querySelectorAll(selector);
-  let best = null;
-  let minDistance = 85;
+  const margin = 12; // Small 12px tolerance for comfortable targeting
 
   for (let i = 0; i < candidates.length; i++) {
     const el = candidates[i];
     if (el.offsetParent === null) continue;
     const rect = el.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const dist = Math.hypot(x - cx, y - cy);
-    if (dist < minDistance) {
-      minDistance = dist;
-      best = { el, cx, cy };
+    if (
+      x >= rect.left - margin &&
+      x <= rect.right + margin &&
+      y >= rect.top - margin &&
+      y <= rect.bottom + margin
+    ) {
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      return { el, cx, cy };
     }
   }
 
-  return best;
+  return null;
 }
 
 async function recenterGaze() {
@@ -695,8 +692,6 @@ function renderHomeView(container) {
       ${appData.categories.map((cat, idx) => `
         <div class="card ${cat.is_external ? 'keyboard-card' : ''} ${cat.is_isl ? 'isl-feature-card' : ''} ${cat.is_sign_to_speech ? 'sign-to-speech-card' : ''}" 
              data-index="${idx}"
-             onmouseenter="startDwell(this)"
-             onmouseleave="cancelDwell(this)"
              onclick="selectCategory('${cat.id}')">
           <div class="dwell-progress-bar"></div>
           ${cat.is_external ? '<span class="card-badge">TEAMMATE FEATURE</span>' : ''}
@@ -745,8 +740,6 @@ function renderCategoryView(container) {
     <div class="cards-grid">
       <div class="card option-card back-card" 
            data-index="back"
-           onmouseenter="startDwell(this)"
-           onmouseleave="cancelDwell(this)"
            onclick="goHome()">
         <div class="dwell-progress-bar"></div>
         <div class="card-icon">↩️</div>
@@ -756,8 +749,6 @@ function renderCategoryView(container) {
       ${cat.options.map((opt, idx) => `
         <div class="card option-card" 
              data-index="${idx}"
-             onmouseenter="startDwell(this)"
-             onmouseleave="cancelDwell(this)"
              onclick="selectOption('${opt.id}')">
           <div class="dwell-progress-bar"></div>
           ${opt.custom ? '<span class="card-badge custom">CUSTOM</span>' : ''}
@@ -1417,8 +1408,6 @@ function renderISLView(container) {
         <div class="isl-anchors-list">
           ${ISL_BODY_ANCHORS.map(anchor => `
             <div class="isl-anchor-btn ${islSelectedAnchor === anchor.id ? 'active' : ''} ${anchor.id === 'gemini_anything' ? 'ai-anchor-card' : ''}"
-                 onmouseenter="startDwell(this)"
-                 onmouseleave="cancelDwell(this)"
                  onclick="selectISLAnchor('${anchor.id}')"
                  title="${anchor.hint}">
               <div class="dwell-progress-bar"></div>
@@ -1448,19 +1437,19 @@ function renderISLView(container) {
           </div>
 
           <div style="display:flex;align-items:center;gap:8px;">
-            <button class="isl-ai-generate-btn" onclick="generateFreshWithGemini()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" title="Generate 6 brand new open sentences using Gemini AI">
+            <button class="isl-ai-generate-btn" onclick="generateFreshWithGemini()" title="Generate 6 brand new open sentences using Gemini AI">
               <div class="dwell-progress-bar"></div>
               ✨ AI Expand Sentences
             </button>
-            <button class="isl-speech-replay-btn" onclick="askCustomAIPrompt()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" title="Speak about any custom topic">
+            <button class="isl-speech-replay-btn" onclick="askCustomAIPrompt()" title="Speak about any custom topic">
               <div class="dwell-progress-bar"></div>
               💡 Speak Anything
             </button>
-            <button class="isl-speech-replay-btn" onclick="replayISL()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" title="Replay the last spoken sentence">
+            <button class="isl-speech-replay-btn" onclick="replayISL()" title="Replay the last spoken sentence">
               <div class="dwell-progress-bar"></div>
               🔁 Replay
             </button>
-            <button class="btn-back" onclick="goHome()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" style="margin:0;padding:8px 14px;font-size:0.85rem;">
+            <button class="btn-back" onclick="goHome()" style="margin:0;padding:8px 14px;font-size:0.85rem;">
               <div class="dwell-progress-bar"></div>
               ⬅ Back
             </button>
@@ -1475,7 +1464,7 @@ function renderISLView(container) {
             </div>
             <div class="isl-ai-followups-list">
               ${geminiFollowups.map(f => `
-                <button class="isl-ai-pill" onclick="triggerAIFollowup('${f.sentence.replace(/'/g, "\\'")}', '${f.icon || '💬'}')" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" title="${f.meaning || ''}">
+                <button class="isl-ai-pill" onclick="triggerAIFollowup('${f.sentence.replace(/'/g, "\\'")}', '${f.icon || '💬'}')" title="${f.meaning || ''}">
                   <div class="dwell-progress-bar"></div>
                   <span>${f.icon || '💬'}</span>
                   <span>"${f.sentence}"</span>
@@ -1491,8 +1480,6 @@ function renderISLView(container) {
             <div class="card isl-express-card ${expr.urgent ? 'urgent' : ''}"
                  data-expr-id="${expr.id}"
                  data-index="${idx}"
-                 onmouseenter="startDwell(this)"
-                 onmouseleave="cancelDwell(this)"
                  onclick="triggerISLExpression('${expr.id}')">
               <div class="dwell-progress-bar"></div>
               
@@ -1502,7 +1489,7 @@ function renderISLView(container) {
                   <span>${expr.gesture}</span>
                 </div>
                 <div class="isl-action-speak-pill">
-                  <span>🔊 SPEAKS ON GLANCE</span>
+                  <span>🔊 CLICK TO SPEAK</span>
                 </div>
               </div>
 
@@ -1512,7 +1499,7 @@ function renderISLView(container) {
 
               <div class="isl-card-footer-row">
                 <span class="isl-meaning-sub">${expr.meaning}</span>
-                <span class="isl-dwell-indicator">⏱️ 0.8s dwell</span>
+                <span class="isl-dwell-indicator">⏱️ Click or Dwell</span>
               </div>
             </div>
           `).join('')}
@@ -1661,7 +1648,6 @@ function highlightFocused() {
     if (idx === focusedIndex) {
       el.classList.add('focused');
       el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      startDwell(el);
     } else {
       el.classList.remove('focused');
     }
