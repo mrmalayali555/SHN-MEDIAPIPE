@@ -11,6 +11,9 @@
   <header id="topbar">
     <div class="topbar-left">
       <span class="brand">👁️ EyeVoice</span>
+      <button id="btn-mode-hub" class="badge-mode" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;font-weight:700;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;" onclick="openModeSelectorModal()" title="Switch Communication Pathway between Eye-to-Speech and Sign-to-Speech">
+        <span>⇄</span> <span id="topbar-mode-label">Mode: Select</span>
+      </button>
       <!-- PERMANENT BACK BUTTON: ALWAYS VISIBLE EVERYWHERE AT ALL TIMES -->
       <button id="perm-back-btn" class="btn-perm-back" onclick="goHome()" onmouseenter="startDwell(this)" onmouseleave="cancelDwell(this)" title="Permanent Back / Return to Home Dashboard">
         <div class="dwell-progress-bar"></div>
@@ -85,6 +88,90 @@
       <p>Initializing EyeVoice Interface...</p>
     </div>
   </main>
+
+  <!-- ===== COMMUNICATION PATHWAY & PATIENT TYPE SELECTOR MODAL ===== -->
+  <div id="mode-selector-modal" class="overlay hidden">
+    <div class="overlay-content mode-selector-content" style="max-width:860px;width:95%;">
+      <div class="modal-header">
+        <div>
+          <h2 style="display:flex;align-items:center;gap:8px;">
+            <span>🤝</span> Choose Communication Pathway
+          </h2>
+          <p style="color:var(--text-muted);font-size:0.9rem;margin-top:4px;">
+            Select the assistive communication system tailored to the user's physical abilities:
+          </p>
+        </div>
+        <button class="btn-close" onclick="closeModeSelectorModal()">✕</button>
+      </div>
+
+      <div class="mode-cards-grid">
+        <!-- MODE 1: EYE-TO-SPEECH -->
+        <div class="mode-select-card eye-mode-card" onclick="switchCommunicationMode('eye_to_speech')">
+          <div class="mode-card-header">
+            <span class="mode-icon">👁️</span>
+            <span class="mode-badge badge-eye">EYE GAZE &amp; BLINK</span>
+          </div>
+          <h3 class="mode-title">1. Eye-to-Speech Mode</h3>
+          <div class="mode-target">For Paralyzed / Locked-In Patients</div>
+          <p class="mode-desc">
+            Designed for individuals with ALS, quadriplegia, stroke, or motor neuron conditions who <strong>cannot use their hands or speak</strong>.
+          </p>
+          <ul class="mode-features">
+            <li>✔ Controlled entirely by camera eye tracking</li>
+            <li>✔ Dwell selection (rest gaze 0.8s to select)</li>
+            <li>✔ Blink-to-click &amp; 5-blink sleep/wake toggle</li>
+            <li>✔ Complete AAC dashboard with medical &amp; emergency alerts</li>
+          </ul>
+          <button class="btn-launch-mode btn-launch-eye">
+            Launch Eye Gaze System ➔
+          </button>
+        </div>
+
+        <!-- MODE 2: SIGN-TO-SPEECH (THE TWO-WAY BRIDGE) -->
+        <div class="mode-select-card sign-mode-card" onclick="switchCommunicationMode('sign_to_speech')">
+          <div class="mode-card-header">
+            <span class="mode-icon">🤟</span>
+            <span class="mode-badge badge-sign">AI MIDDLEMAN INTERPRETER</span>
+          </div>
+          <h3 class="mode-title">2. Sign-to-Speech Interpreter</h3>
+          <div class="mode-target">Middleman Bridge: Person A ➔ Person B</div>
+          
+          <div class="bridge-mini-diagram">
+            <div class="mini-node">👤 <strong>Person A</strong><br><small>Signs in ISL</small></div>
+            <div class="mini-arrow">➔ ⚡ EyeVoice ➔</div>
+            <div class="mini-node">👂 <strong>Person B</strong><br><small>Hears Speech</small></div>
+          </div>
+
+          <p class="mode-desc">
+            For individuals who <strong>know sign language and can use their hands</strong>, but cannot speak. EyeVoice acts as a middleman: translates physical ISL signs into spoken voice &amp; text for hearing people.
+          </p>
+          <ul class="mode-features">
+            <li>✔ MediaPipe Hand, Pose &amp; Face landmark tracking</li>
+            <li>✔ Real-time ISL grammar translation (SOV order)</li>
+            <li>✔ Natural English &amp; Malayalam spoken voice output</li>
+            <li>✔ Two-way conversation bridge (Person B can reply)</li>
+          </ul>
+          <button class="btn-launch-mode btn-launch-sign">
+            Launch Sign Language Bridge ➔
+          </button>
+        </div>
+      </div>
+
+      <!-- Footer Mode: Virtual Keyboard -->
+      <div class="mode-footer-row" style="margin-top:16px;padding:12px;background:var(--panel-alt);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:space-between;border:1px solid var(--card-border);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:1.5rem;">⌨️</span>
+          <div>
+            <strong style="color:var(--text);font-size:0.95rem;">3. Direct Text &amp; Virtual Keyboard (EyeType)</strong>
+            <div style="color:var(--text-dim);font-size:0.8rem;">Type freeform sentences using eye gaze or mouse pointer</div>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="switchCommunicationMode('keyboard')" style="padding:8px 16px;">
+          Open Keyboard ➔
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- ===== TV / ROOM DEVICE REMOTE MODAL (Part 6) ===== -->
   <div id="remote-modal" class="overlay hidden">

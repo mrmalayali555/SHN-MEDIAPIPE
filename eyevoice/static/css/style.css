@@ -2861,3 +2861,336 @@ kbd {
   animation: signPulse 2s ease-in-out infinite;
 }
 
+
+
+/* ==========================================================================
+   Communication Pathway & Patient Type Selector Hub
+   ========================================================================== */
+
+.mode-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+@media (max-width: 768px) {
+  .mode-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mode-select-card {
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.mode-select-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+.mode-select-card.eye-mode-card {
+  border-color: rgba(59,130,246,0.35);
+  background: linear-gradient(170deg, rgba(30,58,138,0.2) 0%, var(--card-bg) 60%);
+}
+
+.mode-select-card.eye-mode-card:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 10px 30px rgba(59,130,246,0.25);
+}
+
+.mode-select-card.sign-mode-card {
+  border-color: rgba(16,185,129,0.35);
+  background: linear-gradient(170deg, rgba(6,78,59,0.25) 0%, var(--card-bg) 60%);
+}
+
+.mode-select-card.sign-mode-card:hover {
+  border-color: #10b981;
+  box-shadow: 0 10px 30px rgba(16,185,129,0.25);
+}
+
+.mode-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.mode-icon {
+  font-size: 2.2rem;
+}
+
+.mode-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 99px;
+  letter-spacing: 0.03em;
+}
+
+.badge-eye {
+  background: rgba(59,130,246,0.2);
+  color: #60a5fa;
+  border: 1px solid rgba(59,130,246,0.4);
+}
+
+.badge-sign {
+  background: rgba(16,185,129,0.2);
+  color: #34d399;
+  border: 1px solid rgba(16,185,129,0.4);
+}
+
+.mode-title {
+  font-size: 1.25rem;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.mode-target {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.mode-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.mode-features {
+  list-style: none;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+  flex-grow: 1;
+}
+
+.mode-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.btn-launch-mode {
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.btn-launch-eye {
+  background: #3b82f6;
+  color: #fff;
+}
+.btn-launch-eye:hover {
+  background: #2563eb;
+}
+
+.btn-launch-sign {
+  background: #10b981;
+  color: #fff;
+}
+.btn-launch-sign:hover {
+  background: #059669;
+}
+
+/* Two-Way Middleman Bridge Diagram */
+.bridge-mini-diagram {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0,0,0,0.3);
+  border: 1px dashed rgba(16,185,129,0.3);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  margin-bottom: 12px;
+}
+
+.mini-node {
+  font-size: 0.75rem;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.3;
+}
+
+.mini-arrow {
+  color: #10b981;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Communication Bridge Flow Banner on Sign-to-Speech view */
+.bridge-flow-banner {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 1fr;
+  gap: 12px;
+  background: var(--panel-alt);
+  border: 1px solid rgba(16,185,129,0.3);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+@media (max-width: 800px) {
+  .bridge-flow-banner {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+.bridge-actor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--panel);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--card-border);
+}
+
+.bridge-actor .actor-icon {
+  font-size: 1.8rem;
+}
+
+.bridge-actor .actor-info strong {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.bridge-actor .actor-info span {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.bridge-middleman {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: rgba(16,185,129,0.08);
+  border: 1px solid rgba(16,185,129,0.25);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+
+.bridge-middleman strong {
+  color: #10b981;
+  font-size: 0.88rem;
+}
+
+.bridge-middleman span {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.bridge-middleman .middleman-arrow {
+  color: #10b981;
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-top: 2px;
+}
+
+/* Person B Two-Way Reply Section */
+.person-b-reply-card {
+  margin-top: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.person-b-reply-card h4 {
+  font-size: 0.85rem;
+  color: var(--text);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.person-b-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.person-b-input {
+  flex: 1;
+  background: var(--panel-alt);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+
+.person-b-quick-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.pill-quick-reply {
+  background: var(--panel-alt);
+  border: 1px solid var(--card-border);
+  border-radius: 99px;
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pill-quick-reply:hover {
+  background: var(--card-hover);
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+/* Live Reply Banner displayed on Person A's camera */
+.person-a-reply-toast {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  background: rgba(16,185,129,0.92);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-weight: 700;
+  z-index: 10;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

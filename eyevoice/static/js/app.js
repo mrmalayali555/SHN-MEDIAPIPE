@@ -569,24 +569,27 @@ window.addEventListener('touchmove', (e) => {
 }, { passive: true });
 
 // ============================================================================
-// Initialization
+// Initialization & Mode Selection
 // ============================================================================
+let activeCommunicationMode = null; // 'eye_to_speech' or 'sign_to_speech'
+
 document.addEventListener('DOMContentLoaded', () => {
-  document.body.setAttribute('data-gaze', 'webcam');
   loadData();
   setupKeyboardNavigation();
   initSpeech();
 
-  // If browser_tracker isn't loaded (e.g. offline), fallback to server stream if local
-  setTimeout(() => {
-    if (gazeSource === 'webcam' && (!window.isBrowserTrackerRunning || !window.isBrowserTrackerRunning())) {
-      if (window.initBrowserTracker) {
-        window.initBrowserTracker();
-      } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        initGazeStream();
-      }
-    }
-  }, 300);
+  // Check if a communication mode was previously chosen
+  const savedMode = sessionStorage.getItem('eyevoice_mode');
+  if (savedMode === 'sign_to_speech') {
+    switchCommunicationMode('sign_to_speech', false);
+  } else if (savedMode === 'eye_to_speech') {
+    switchCommunicationMode('eye_to_speech', false);
+  } else {
+    // First time in session: Present the Communication Pathway Selector upfront!
+    setTimeout(() => {
+      openModeSelectorModal();
+    }, 350);
+  }
 
   // Speak button
   document.getElementById('speak-btn').addEventListener('click', () => {
@@ -2018,14 +2021,40 @@ async function renderSignToSpeechView(container) {
     <div class="category-header-banner" style="border-color:#10b981;">
       <div class="cat-banner-info">
         <h2>
-          <span>🤟</span> Sign Language to Speech (ISL Interpreter)
-          <span class="sign-mode-badge">⚡ LIVE MEDIAPIPE</span>
+          <span>🤟</span> Sign Language to Speech (Two-Way Communication Bridge)
+          <span class="sign-mode-badge">⚡ AI MIDDLEMAN</span>
         </h2>
-        <p>Sign naturally with your hands and expressions. EyeVoice recognizes your signs and speaks for you.</p>
+        <p>Intelligent interpreter between Person A (who uses sign language) and Person B (who speaks and listens).</p>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
-        <span id="sign-main-status" class="sign-cam-status inactive">● Camera Idle</span>
-        <button class="btn-back" onclick="goHome()">⬅ Back to Dashboard</button>
+        <button class="btn-secondary" onclick="openModeSelectorModal()" style="border-color:#10b981;color:#10b981;padding:6px 12px;font-size:0.85rem;">
+          ⇄ Switch Mode
+        </button>
+        <button class="btn-back" onclick="goHome()">⬅ Dashboard</button>
+      </div>
+    </div>
+
+    <!-- TWO-WAY COMMUNICATION BRIDGE ARCHITECTURE BANNER -->
+    <div class="bridge-flow-banner">
+      <div class="bridge-actor">
+        <span class="actor-icon">👤</span>
+        <div class="actor-info">
+          <strong>Person A: The Signer</strong>
+          <span>Cannot speak • Signs in ISL</span>
+        </div>
+      </div>
+      <div class="bridge-middleman">
+        <span class="middleman-icon">⚡</span>
+        <strong>EyeVoice AI Middleman</strong>
+        <span>Tracks Hands &amp; Pose • Translates SOV Grammar • Speaks Aloud</span>
+        <span class="middleman-arrow">➔ ➔ ➔</span>
+      </div>
+      <div class="bridge-actor">
+        <span class="actor-icon">👂</span>
+        <div class="actor-info">
+          <strong>Person B: The Listener</strong>
+          <span>Hears Spoken Audio • Reads English &amp; Malayalam</span>
+        </div>
       </div>
     </div>
 
@@ -2128,11 +2157,29 @@ async function renderSignToSpeechView(container) {
 
             <div class="sign-speech-controls" style="padding:8px 0 0 0;">
               <button id="btn-sign-speak" class="btn-sign-action btn-sign-speak" onclick="speakSignSentence()" disabled>
-                🔊 Speak Sentence
+                🔊 Speak to Person B
               </button>
               <button class="btn-sign-action btn-sign-clear" onclick="replaySignSentence()">
-                🔁 Replay
+                🔁 Replay Audio
               </button>
+            </div>
+
+            <!-- Person B Two-Way Reply Box -->
+            <div class="person-b-reply-card">
+              <h4><span>👂</span> Person B Quick Reply to Person A:</h4>
+              <div class="person-b-input-row">
+                <input type="text" id="person-b-reply-input" class="person-b-input" placeholder="Type reply for Person A to read on screen..." onkeydown="if(event.key==='Enter') sendPersonBReply()">
+                <button class="btn-secondary" onclick="sendPersonBReply()" style="padding:6px 14px;background:#3b82f6;color:#fff;border:none;">
+                  Send ➔
+                </button>
+              </div>
+              <div class="person-b-quick-pills">
+                <span class="pill-quick-reply" onclick="sendPersonBReply('Yes, I understand.')">✅ Yes, understood</span>
+                <span class="pill-quick-reply" onclick="sendPersonBReply('Getting water for you now.')">💧 Getting water</span>
+                <span class="pill-quick-reply" onclick="sendPersonBReply('Calling the doctor right away.')">👨‍⚕️ Calling doctor</span>
+                <span class="pill-quick-reply" onclick="sendPersonBReply('Please wait one minute.')">⏳ Please wait</span>
+                <span class="pill-quick-reply" onclick="sendPersonBReply('I love you too!')">❤️ Love you too</span>
+              </div>
             </div>
           </div>
         </div>
@@ -2490,4 +2537,155 @@ function exitSignToSpeechMode() {
     clearTimeout(autoSpeakTimer);
     autoSpeakTimer = null;
   }
+}
+
+
+// ============================================================================
+// Communication Pathway & Mode Switcher Management
+// ============================================================================
+
+function openModeSelectorModal() {
+  const modal = document.getElementById('mode-selector-modal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeModeSelectorModal() {
+  const modal = document.getElementById('mode-selector-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+/**
+ * Switch between the two primary patient communication modalities
+ * @param {'eye_to_speech' | 'sign_to_speech' | 'keyboard'} mode 
+ * @param {boolean} notify 
+ */
+function switchCommunicationMode(mode, notify = true) {
+  closeModeSelectorModal();
+  activeCommunicationMode = mode;
+  sessionStorage.setItem('eyevoice_mode', mode);
+
+  const topbarLabel = document.getElementById('topbar-mode-label');
+  const reticle = document.getElementById('gaze-reticle');
+  const cameraHud = document.getElementById('camera-hud');
+  const gazeBtn = document.getElementById('gaze-mode-btn');
+  const dwellBtn = document.getElementById('dwell-toggle-btn');
+  const calibBtn = document.getElementById('quick-calib-btn');
+
+  if (mode === 'eye_to_speech') {
+    // ── 1. EYE-TO-SPEECH MODE ──
+    if (topbarLabel) topbarLabel.textContent = 'Mode: 👁️ Eye-to-Speech';
+    document.body.setAttribute('data-gaze', 'webcam');
+
+    // Stop sign tracker if active
+    if (typeof stopSignCamera === 'function') stopSignCamera();
+
+    // Show eye tracking reticle and HUD
+    if (reticle) reticle.style.display = 'block';
+    if (cameraHud) cameraHud.style.display = 'block';
+    if (gazeBtn) gazeBtn.style.display = 'inline-flex';
+    if (dwellBtn) dwellBtn.style.display = 'inline-flex';
+    if (calibBtn) calibBtn.style.display = 'inline-flex';
+
+    // Start eye tracker
+    if (window.initBrowserTracker && (!window.isBrowserTrackerRunning || !window.isBrowserTrackerRunning())) {
+      window.initBrowserTracker();
+    }
+
+    currentView = 'home';
+    currentCategory = null;
+    renderView();
+
+    if (notify) showToast("👁️ Eye-to-Speech Mode Active (Gaze & Dwell Controls)");
+
+  } else if (mode === 'sign_to_speech') {
+    // ── 2. SIGN-TO-SPEECH INTERPRETER (TWO-WAY BRIDGE) ──
+    if (topbarLabel) topbarLabel.textContent = 'Mode: 🤟 Sign Interpreter';
+
+    // Disable / hide eye-tracking reticle so it doesn't distract or interfere
+    if (reticle) reticle.style.display = 'none';
+    if (cameraHud) cameraHud.style.display = 'none';
+    if (gazeBtn) gazeBtn.style.display = 'none';
+    if (dwellBtn) dwellBtn.style.display = 'none';
+    if (calibBtn) calibBtn.style.display = 'none';
+
+    // Stop eye tracker camera loop to save GPU/CPU for sign tracker
+    if (window.stopBrowserTracker) {
+      window.stopBrowserTracker();
+    }
+    cancelDwell();
+
+    // Launch Sign Interpreter View directly
+    currentView = 'sign_to_speech';
+    renderView();
+
+    // Auto-start Sign Camera after layout renders
+    setTimeout(() => {
+      startSignCamera();
+    }, 300);
+
+    if (notify) showToast("🤟 Sign-to-Speech Active (Person A ➔ Middleman ➔ Person B)");
+
+  } else if (mode === 'keyboard') {
+    openKeyboardModal();
+  }
+}
+
+/**
+ * Two-Way Bridge: Person B (The Listener) sends a quick reply to Person A's camera screen
+ */
+function sendPersonBReply(replyText) {
+  const inputEl = document.getElementById('person-b-reply-input');
+  const text = (replyText || (inputEl ? inputEl.value : '')).trim();
+  if (!text) return;
+
+  if (inputEl) inputEl.value = '';
+
+  // Show prominent reply banner on Person A's video viewport
+  let toastEl = document.getElementById('person-a-reply-toast');
+  if (!toastEl) {
+    const viewport = document.querySelector('.sign-camera-viewport');
+    if (viewport) {
+      toastEl = document.createElement('div');
+      toastEl.id = 'person-a-reply-toast';
+      toastEl.className = 'person-a-reply-toast';
+      viewport.appendChild(toastEl);
+    }
+  }
+
+  if (toastEl) {
+    toastEl.innerHTML = `<span>💬 Person B says:</span> <strong>"${text}"</strong>`;
+    toastEl.style.display = 'flex';
+    // Play subtle chime so Person A hears that Person B replied
+    playClickChime();
+
+    setTimeout(() => {
+      if (toastEl) toastEl.style.display = 'none';
+    }, 4500);
+  }
+
+  // Record in conversation history
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  signConversationHistory.unshift({
+    icon: '👂',
+    text: `Person B (Reply): "${text}"`,
+    glosses: 'Spoken / Typed by Person B',
+    time: timeStr
+  });
+
+  // Update history UI
+  const historyList = document.getElementById('sign-history-list');
+  if (historyList) {
+    historyList.innerHTML = signConversationHistory.map(item => `
+      <div class="sign-history-item" style="${item.icon === '👂' ? 'border-color:#3b82f6;background:rgba(59,130,246,0.1);' : ''}">
+        <div class="sign-history-avatar">${item.icon}</div>
+        <div class="sign-history-content">
+          <div class="sign-history-text">${item.text}</div>
+          <div class="sign-history-meta">${item.glosses} • ${item.time}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  showToast(`Sent to Person A: "${text}"`);
 }
