@@ -223,6 +223,113 @@ def _local_fallback_options(cue: str, context: str) -> dict[str, Any]:
     }
 
 
+# Vision-capable models (flash-lite does NOT support images well)
+VISION_MODELS = ["gemini-2.5-flash", "gemini-flash-latest"]
+
+
+def call_gemini_vision(
+    image_base64: str,
+    prompt: str,
+    json_mode: bool = True,
+    timeout: int = 12,
+) -> dict[str, Any] | str | None:
+    """Call Google Gemini Vision API with a base64-encoded JPEG image and text prompt."""
+    api_key = _get_gemini_api_key()
+    if not api_key:
+        return None
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-goog-api-key": api_key,
+    }
+
+    body: dict[str, Any] = {
+        "contents": [
+            {
+                "parts": [
+                    {
+                        "inlineData": {
+                            "mimeType": "image/jpeg",
+                            "data": image_base64,
+                        }
+                    },
+                    {"text": prompt},
+                ]
+            }
+        ],
+    }
+    if json_mode:
+        body["generationConfig"] = {"responseMimeType": "application/json"}
+
+    payload = json.dumps(body).encode("utf-8")
+
+    for model in VISION_MODELS:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+        req = urllib.request.Request(url, data=payload, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                candidates = data.get("candidates", [])
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    if parts:
+                        text = parts[0].get("text", "").strip()
+                        if json_mode:
+                            try:
+                                return json.loads(text)
+                            except json.JSONDecodeError:
+                                return {"raw": text}
+                        return text
+        except urllib.error.HTTPError:
+            # Try next model if 404 or rate-limited
+            continue
+        except Exception:
+            continue
+
+    return None
+
+
+_SIGN_INTERPRET_PROMPT = """You are an expert sign language interpreter with knowledge of ISL (Indian Sign Language), ASL (American Sign Language), BSL (British Sign Language), and international sign systems.
+
+Analyze this webcam frame showing a person making hand signs/gestures. Look at:
+1. Hand shape (which fingers are extended/folded, thumb position)
+2. Hand orientation (palm facing direction)
+3. Hand location relative to body (face, chest, waist)
+4. Both hands if visible (are they mirroring, interacting, or independent?)
+5. Facial expression (eyebrow raise = question, head shake = negation)
+
+Based on your analysis, determine:
+- What sign or gesture is being performed
+- The most likely meaning in English
+- Confidence level (high/medium/low)
+
+Return ONLY a JSON object:
+{
+  "detected": true,
+  "sign_name": "Name of the sign (e.g. HELLO, THANK_YOU, I_WANT_WATER)",
+  "meaning_en": "English translation of what the person is saying",
+  "sign_language": "ISL/ASL/BSL/Universal",
+  "confidence": "high/medium/low",
+  "hand_description": "Brief description of hand configuration seen",
+  "is_signing": true
+}
+
+If no clear sign is detected (hands not visible, ambiguous gesture, or person is just resting):
+{
+  "detected": false,
+  "sign_name": null,
+  "meaning_en": "",
+  "confidence": "low",
+  "hand_description": "Description of what you see",
+  "is_signing": false
+}"""
+
+
+def interpret_sign_frame(image_base64: str) -> dict[str, Any] | None:
+    """Convenience wrapper: interpret a webcam frame for sign language gestures."""
+    return call_gemini_vision(image_base64, _SIGN_INTERPRET_PROMPT, json_mode=True, timeout=12)
+
+
 if __name__ == "__main__":
     print("Testing EyeVoice Gemini Service...")
     res = generate_open_speech("What is your name and how are you?")

@@ -417,3 +417,14 @@ window.stopSignTracker = function stopSignTracker() {
 window.isSignTrackerRunning = function isSignTrackerRunning() {
   return running;
 };
+
+window.captureSignFrame = function captureSignFrame() {
+  const canvas = document.getElementById('sign-canvas');
+  if (!canvas || !running) return null;
+  try {
+    return canvas.toDataURL('image/jpeg', 0.7);
+  } catch (e) {
+    console.warn('Frame capture failed:', e);
+    return null;
+  }
+};

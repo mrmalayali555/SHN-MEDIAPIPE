@@ -143,10 +143,10 @@ def _load_isl_data() -> dict:
 _memory_sign_vocab: dict | None = None
 
 
-def _load_sign_vocabulary() -> dict:
+def _load_sign_vocabulary(force_reload: bool = False) -> dict:
     """Load the sign_vocabulary.json for the Sign-to-Speech webcam recognition feature."""
     global _memory_sign_vocab
-    if _memory_sign_vocab is not None:
+    if _memory_sign_vocab is not None and not force_reload:
         return _memory_sign_vocab
     p = _find_file("data/sign_vocabulary.json")
     if p and p.exists():
@@ -304,39 +304,144 @@ def get_sign_vocabulary():
     })
 
 
+# ---- ISL Research Datasets Management & Remote Streaming API ----
+@app.route("/api/isl/datasets", methods=["GET"])
+def get_isl_datasets():
+    """Return overview of all 9 Indian Sign Language datasets with live status."""
+    from eyevoice.hf_datasets_manager import get_isl_datasets_summary
+    return jsonify(get_isl_datasets_summary())
+
+
+@app.route("/api/isl/datasets/<dataset_id>/inspect", methods=["GET"])
+def inspect_isl_dataset(dataset_id: str):
+    """Remotely inspect sample rows and features of an ISL dataset from Hugging Face Hub."""
+    from eyevoice.hf_datasets_manager import inspect_remote_hf_dataset, _load_isl_catalog
+    catalog = _load_isl_catalog()
+    ds = next((d for d in catalog.get("datasets", []) if d.get("id") == dataset_id), None)
+    if not ds:
+        return jsonify({"error": f"Dataset {dataset_id} not found"}), 404
+
+    hf_repo_id = ds.get("hf_repo_id")
+    if not hf_repo_id:
+        return jsonify({
+            "success": True,
+            "source": "remote_reference",
+            "name": ds.get("name"),
+            "url": ds.get("url"),
+            "samples": ds.get("samples"),
+            "classes": ds.get("classes"),
+            "description": ds.get("description"),
+            "rows_preview": [
+                {"note": "This dataset is cataloged via its research/institutional portal.", "url": ds.get("url")}
+            ]
+        })
+
+    split = request.args.get("split", "train")
+    config = request.args.get("config", None)
+    result = inspect_remote_hf_dataset(hf_repo_id, config=config, split=split, max_rows=5)
+    return jsonify(result)
+
+
+@app.route("/api/isl/catalog", methods=["GET"])
+def get_isl_catalog_file():
+    """Return the raw JSON catalog of Indian Sign Language datasets."""
+    from eyevoice.hf_datasets_manager import _load_isl_catalog
+    return jsonify(_load_isl_catalog())
+
+
+@app.route("/api/isl/connectivity", methods=["GET"])
+def get_isl_connectivity():
+    """Test connection latency to Hugging Face, Mendeley, and Govt ISL Portal."""
+    from eyevoice.hf_datasets_manager import test_hf_connectivity
+    return jsonify(test_hf_connectivity())
+
+
 @app.route("/api/sign-translate", methods=["POST"])
 def sign_translate():
     """Translate a sequence of recognized sign glosses into a natural English sentence.
 
-    Uses Gemini AI for natural-sounding translation with ISL grammar awareness,
-    falling back to a simple gloss join if the AI service is unavailable.
+    Specifically recognizes fingerspelling sequences (e.g. LETTER_I + LETTER_L + LETTER_Y)
+    as well as simultaneous whole-sign gestures, with ISL grammar awareness and Gemini polishing.
     """
     payload = request.get_json(force=True) or {}
     glosses = payload.get("glosses", [])
     if not glosses:
         return jsonify({"sentence": "", "method": "empty"})
 
-    # Try Gemini for natural language generation
+    # Check for fingerspelled sequences (e.g. I -> L -> Y sequence)
+    is_fingerspelled_ily = False
+    for i in range(len(glosses) - 2):
+        if glosses[i] == "LETTER_I" and glosses[i+1] == "LETTER_L" and glosses[i+2] == "LETTER_Y":
+            is_fingerspelled_ily = True
+            break
+
+    if is_fingerspelled_ily and len(glosses) == 3:
+        return jsonify({
+            "sentence": "I love you (fingerspelled: I-L-Y).",
+            "method": "fingerspelling_rules",
+            "type": "fingerspelling_sequence"
+        })
+
+    # Try Gemini for natural language generation and ISL grammar polishing
     try:
         from eyevoice.gemini_service import call_gemini
         prompt = (
             "You are an Indian Sign Language (ISL) interpreter. "
             "ISL uses SOV (Subject-Object-Verb) word order, topic-comment structure, "
             "and sentence-final negation/questions. "
-            "Given these recognized ISL sign glosses in sequence order, "
+            "Given these recognized ISL sign glosses or fingerspelled letters in sequence order, "
             "translate them into a single natural, fluent English sentence. "
+            "If the sequence contains consecutive letters (e.g. LETTER_C, LETTER_A, LETTER_T), "
+            "combine them into fingerspelled words. "
             "Only output the translated sentence, nothing else.\n\n"
             f"Sign glosses: {' → '.join(glosses)}"
         )
         result = call_gemini(prompt, json_mode=False, timeout=6)
         if result and isinstance(result, str) and len(result.strip()) > 0:
-            return jsonify({"sentence": result.strip(), "method": "gemini"})
+            return jsonify({"sentence": result.strip(), "method": "gemini_polish"})
     except Exception as e:
         print(f"Gemini sign-translate fallback: {e}")
 
-    # Deterministic fallback: simple gloss-to-sentence
-    sentence = " ".join(g.replace("_", " ").title() for g in glosses) + "."
+    # Deterministic fallback: assemble letters and signs
+    words = []
+    current_letters = []
+    for g in glosses:
+        if g.startswith("LETTER_"):
+            current_letters.append(g.replace("LETTER_", ""))
+        else:
+            if current_letters:
+                words.append("".join(current_letters))
+                current_letters = []
+            clean_word = g.replace("NUM_", "").replace("_", " ").title()
+            words.append(clean_word)
+    if current_letters:
+        words.append("".join(current_letters))
+
+    sentence = " ".join(words) + "."
     return jsonify({"sentence": sentence, "method": "fallback"})
+
+
+@app.route("/api/sign-interpret-frame", methods=["POST"])
+def sign_interpret_frame():
+    """Use Gemini Vision AI to interpret any sign language gesture from a webcam frame."""
+    payload = request.get_json(force=True) or {}
+    image_b64 = payload.get("image", "")
+    if not image_b64:
+        return jsonify({"error": "no image provided"}), 400
+
+    # Strip data URL prefix if present
+    if "," in image_b64:
+        image_b64 = image_b64.split(",", 1)[1]
+
+    try:
+        from eyevoice.gemini_service import interpret_sign_frame
+        result = interpret_sign_frame(image_b64)
+        if result:
+            return jsonify(result)
+        return jsonify({"detected": False, "meaning_en": "", "error": "AI service unavailable"})
+    except Exception as e:
+        print(f"Sign interpret error: {e}")
+        return jsonify({"detected": False, "meaning_en": "", "error": str(e)}), 500
 
 
 # ---- Gemini AI Open-Ended Communicator API ----

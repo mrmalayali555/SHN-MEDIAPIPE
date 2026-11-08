@@ -413,6 +413,71 @@
     </div>
   </div>
 
+  <!-- ===== ISL RESEARCH DATASETS & CLOUD STREAMING MODAL ===== -->
+  <div id="isl-datasets-modal" class="overlay hidden">
+    <div class="overlay-content isl-datasets-modal-content">
+      <div class="modal-header">
+        <div>
+          <h2>🌐 Indian Sign Language (ISL) Research Datasets</h2>
+          <p style="font-size:0.8rem;color:var(--text-dim);margin-top:2px;">
+            Hugging Face Remote Streaming • Strictly Isolated ISL • <strong style="color:#10b981;">0 GB Local Disk Used</strong>
+          </p>
+        </div>
+        <button class="btn-close" onclick="closeDatasetsModal()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:14px 20px;">
+        <!-- Top Stats Bar -->
+        <div class="datasets-stat-bar">
+          <div class="dataset-stat-box">
+            <span class="stat-num" id="stat-isl-count">9</span>
+            <span class="stat-label">ISL Datasets</span>
+          </div>
+          <div class="dataset-stat-box">
+            <span class="stat-num" id="stat-isl-classes">18,500+</span>
+            <span class="stat-label">Total Sign Classes</span>
+          </div>
+          <div class="dataset-stat-box">
+            <span class="stat-num" id="stat-isl-signers">100+</span>
+            <span class="stat-label">Native Signers</span>
+          </div>
+          <div class="dataset-stat-box" style="border-color:#10b981;">
+            <span class="stat-num" style="color:#10b981;">0 GB</span>
+            <span class="stat-label">Laptop Disk Safe</span>
+          </div>
+        </div>
+
+        <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:8px;padding:10px 14px;margin:12px 0;font-size:0.85rem;color:var(--text);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div>
+            <strong>🛡️ Storage Protection Active:</strong> Datasets stream on-demand via Hugging Face Hub / Dataset Viewer API. No multi-gigabyte video dumps on your local computer.
+          </div>
+          <button class="btn-secondary" onclick="checkISLConnectivity()" style="padding:4px 10px;font-size:0.75rem;border-color:#3b82f6;color:#60a5fa;">
+            ⚡ Check Cloud Connection
+          </button>
+        </div>
+
+        <div id="isl-conn-status" style="display:none;margin-bottom:10px;font-size:0.75rem;"></div>
+
+        <!-- Datasets List Container -->
+        <div id="isl-datasets-grid" class="isl-datasets-grid">
+          <div style="text-align:center;padding:20px;color:var(--text-dim);">Loading remote dataset manifests…</div>
+        </div>
+
+        <!-- Sample Preview Drawer / Container -->
+        <div id="dataset-inspect-drawer" class="dataset-inspect-drawer" style="display:none;margin-top:14px;background:var(--card-bg);border:1px solid #3b82f6;border-radius:8px;padding:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h4 id="inspect-drawer-title" style="margin:0;color:#60a5fa;font-size:0.9rem;">Streaming Live Samples</h4>
+            <button class="btn-perm-back" onclick="closeInspectDrawer()" style="padding:2px 8px;font-size:0.75rem;">Close Preview ✕</button>
+          </div>
+          <div id="inspect-drawer-content" style="max-height:180px;overflow-y:auto;background:var(--bg);border-radius:6px;padding:8px;font-size:0.78rem;font-family:monospace;white-space:pre-wrap;color:var(--text);"></div>
+        </div>
+      </div>
+      <div style="padding:12px 20px;border-top:1px solid var(--card-border);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:0.75rem;color:var(--text-dim);">For training full 50GB models, launch a GitHub Codespace.</span>
+        <button class="btn-secondary" onclick="closeDatasetsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== FLOATING EYE GAZE RETICLE ===== -->
   <div id="gaze-reticle" class="gaze-reticle"></div>
 

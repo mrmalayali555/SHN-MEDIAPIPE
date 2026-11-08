@@ -1995,8 +1995,8 @@ let signStatusCallbackAttached = false;
 /**
  * Load verified ISL vocabulary from server API
  */
-async function loadSignVocabulary() {
-  if (signVocabData.length > 0) return signVocabData;
+async function loadSignVocabulary(force = false) {
+  if (!force && signVocabData.length >= 25) return signVocabData;
   try {
     const res = await fetch('/api/sign-vocabulary');
     if (res.ok) {
@@ -2016,8 +2016,8 @@ async function loadSignVocabulary() {
  * Render the dedicated Sign Language to Speech Interpreter Interface
  */
 async function renderSignToSpeechView(container) {
-  // Ensure vocabulary is loaded
-  await loadSignVocabulary();
+  // Ensure vocabulary is loaded with full expanded ISL set
+  await loadSignVocabulary(true);
 
   const vocab = signVocabData || [];
 
@@ -2028,9 +2028,12 @@ async function renderSignToSpeechView(container) {
           <span>🤟</span> Sign Language to Speech (Two-Way Communication Bridge)
           <span class="sign-mode-badge">⚡ AI MIDDLEMAN</span>
         </h2>
-        <p>Intelligent interpreter between Person A (who uses sign language) and Person B (who speaks and listens).</p>
+        <p>Intelligent interpreter between Person A (who uses Indian Sign Language) and Person B (who speaks and listens).</p>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn-secondary" onclick="openDatasetsModal()" style="border-color:#3b82f6;color:#60a5fa;padding:6px 12px;font-size:0.85rem;" title="Explore 9 research datasets streaming via Hugging Face Cloud">
+          🌐 9 ISL Datasets (Cloud Streaming)
+        </button>
         <button class="btn-secondary" onclick="openModeSelectorModal()" style="border-color:#10b981;color:#10b981;padding:6px 12px;font-size:0.85rem;">
           ⇄ Switch Mode
         </button>
@@ -2125,6 +2128,14 @@ async function renderSignToSpeechView(container) {
                 <span class="finger-chip" id="chip-ring">Ring</span>
                 <span class="finger-chip" id="chip-pinky">Pinky</span>
               </div>
+
+              <!-- AI Polishing & Open Sign Translation -->
+              <div id="ai-sign-status-chip" class="ai-sign-status-chip idle">
+                🧠 Gemini AI: Polishing &amp; Continuous Language Translation Ready
+              </div>
+              <button id="btn-ai-sign-polish" class="btn-ai-polish" onclick="triggerAiSignInterpretation()">
+                🧠 AI Interpret &amp; Polish Any Sign
+              </button>
             </div>
           </div>
         </div>
@@ -2692,4 +2703,224 @@ function sendPersonBReply(replyText) {
   }
 
   showToast(`Sent to Person A: "${text}"`);
+}
+
+
+/* ==========================================================================
+   ISL RESEARCH DATASETS & REMOTE STREAMING MANAGER
+   ========================================================================== */
+
+let islDatasetsCache = null;
+
+async function openDatasetsModal() {
+  const modal = document.getElementById('isl-datasets-modal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  await loadISLDatasetsGrid();
+}
+
+function closeDatasetsModal() {
+  const modal = document.getElementById('isl-datasets-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function loadISLDatasetsGrid() {
+  const gridEl = document.getElementById('isl-datasets-grid');
+  if (!gridEl) return;
+
+  gridEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim);">Connecting to Hugging Face Cloud…</div>';
+
+  try {
+    const res = await fetch('/api/isl/datasets');
+    if (!res.ok) throw new Error('API returned ' + res.status);
+    const data = await res.json();
+    islDatasetsCache = data.datasets || [];
+
+    const countEl = document.getElementById('stat-isl-count');
+    const classesEl = document.getElementById('stat-isl-classes');
+    const signersEl = document.getElementById('stat-isl-signers');
+    if (countEl) countEl.textContent = data.total_datasets || islDatasetsCache.length;
+    if (classesEl) classesEl.textContent = (data.total_sign_classes || 18500).toLocaleString() + '+';
+    if (signersEl) signersEl.textContent = (data.total_signers || 100) + '+';
+
+    gridEl.innerHTML = islDatasetsCache.map(ds => `
+      <div class="isl-dataset-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">
+          <div class="ds-name">${ds.name}</div>
+        </div>
+        <span class="ds-type">${(ds.type || '').replace('_', ' ').toUpperCase()}</span>
+        <div class="ds-meta">
+          <div>📊 <strong>${(ds.samples || 0).toLocaleString()}</strong> samples • <strong>${ds.classes || 0}</strong> classes</div>
+          <div>👤 <strong>${ds.signers || '?'}</strong> signers • Format: ${ds.format}</div>
+          <div>⚖️ ${ds.licence || 'Open Research'}</div>
+          <div style="color:#10b981;font-weight:600;">☁️ ${ds.local_storage_used}</div>
+        </div>
+        <div class="ds-actions">
+          ${ds.hf_repo_id ? `
+            <button class="btn-ds-stream" onclick="inspectDatasetRemote('${ds.id}')">
+              ⚡ Stream Samples
+            </button>
+          ` : `
+            <a href="${ds.url}" target="_blank" rel="noopener" class="btn-perm-back" style="font-size:0.75rem;padding:4px 8px;text-decoration:none;">
+              🔗 Official Portal
+            </a>
+          `}
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Failed to load ISL datasets:', err);
+    gridEl.innerHTML = `<div style="color:#ef4444;padding:20px;text-align:center;">Failed to load dataset catalog: ${err.message}</div>`;
+  }
+}
+
+async function inspectDatasetRemote(datasetId) {
+  const drawer = document.getElementById('dataset-inspect-drawer');
+  const titleEl = document.getElementById('inspect-drawer-title');
+  const contentEl = document.getElementById('inspect-drawer-content');
+  if (!drawer || !contentEl) return;
+
+  drawer.style.display = 'block';
+  if (titleEl) titleEl.textContent = `Streaming Remote Sample Rows: ${datasetId.toUpperCase()}`;
+  contentEl.textContent = 'Streaming preview rows from Hugging Face Cloud API without local download…';
+
+  try {
+    const res = await fetch(`/api/isl/datasets/${datasetId}/inspect`);
+    if (!res.ok) throw new Error('Inspect failed with status ' + res.status);
+    const data = await res.json();
+    contentEl.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    contentEl.textContent = `Error inspecting dataset: ${err.message}`;
+  }
+}
+
+function closeInspectDrawer() {
+  const drawer = document.getElementById('dataset-inspect-drawer');
+  if (drawer) drawer.style.display = 'none';
+}
+
+async function checkISLConnectivity() {
+  const statusEl = document.getElementById('isl-conn-status');
+  if (!statusEl) return;
+  statusEl.style.display = 'block';
+  statusEl.innerHTML = '<span style="color:#a78bfa;">Testing latency to Hugging Face, Mendeley, and ISLRTC…</span>';
+
+  try {
+    const res = await fetch('/api/isl/connectivity');
+    if (!res.ok) throw new Error('Status ' + res.status);
+    const data = await res.json();
+    statusEl.innerHTML = data.connectivity.map(c => `
+      <div style="display:inline-block;margin-right:12px;color:${c.status === 'online' ? '#10b981' : '#60a5fa'};">
+        ● ${c.name}: <strong>${c.latency_ms}ms</strong> (${c.status})
+      </div>
+    `).join('');
+  } catch (err) {
+    statusEl.innerHTML = `<span style="color:#ef4444;">Connectivity test error: ${err.message}</span>`;
+  }
+}
+
+/* ==========================================================================
+   AI SIGN INTERPRETATION & GRAMMAR POLISHING
+   ========================================================================== */
+
+let isAiInterpreting = false;
+
+async function triggerAiSignInterpretation() {
+  if (isAiInterpreting) return;
+
+  const statusChip = document.getElementById('ai-sign-status-chip');
+  const btn = document.getElementById('btn-ai-sign-polish');
+
+  // 1. Capture current frame from canvas
+  let frameB64 = null;
+  if (typeof window.captureSignFrame === 'function') {
+    frameB64 = window.captureSignFrame();
+  }
+  if (!frameB64) {
+    const canvas = document.getElementById('sign-canvas');
+    if (canvas) {
+      try { frameB64 = canvas.toDataURL('image/jpeg', 0.7); } catch (_) {}
+    }
+  }
+
+  if (!frameB64) {
+    showToast('Please start the camera first to capture signs');
+    return;
+  }
+
+  isAiInterpreting = true;
+  if (statusChip) {
+    statusChip.className = 'ai-sign-status-chip active';
+    statusChip.textContent = '🧠 Gemini Vision: Analyzing handshape, orientation & facial cues…';
+  }
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/sign-interpret-frame', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: frameB64 })
+    });
+
+    if (res.ok) {
+      const result = await res.json();
+      if (result && result.detected && result.meaning_en) {
+        if (statusChip) {
+          statusChip.className = 'ai-sign-status-chip detected';
+          statusChip.textContent = `🧠 AI Sign Detected: ${result.meaning_en} (${result.sign_name || 'ISL Gesture'})`;
+        }
+        playClickChime();
+        showToast(`AI Detected: "${result.meaning_en}"`);
+
+        currentSignSentence = result.meaning_en;
+        currentSignMalayalam = '';
+
+        const transEl = document.getElementById('sign-translated-text');
+        const speakBtn = document.getElementById('btn-sign-speak');
+        if (transEl) transEl.textContent = `"${currentSignSentence}"`;
+        if (speakBtn) speakBtn.disabled = false;
+
+        if (autoSpeakEnabled) {
+          speakSignSentence();
+        }
+
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        signConversationHistory.unshift({
+          icon: '🧠',
+          text: `Person A (AI Vision): "${result.meaning_en}"`,
+          glosses: `${result.sign_name || 'AI-Gesture'} • Conf: ${result.confidence || 'high'}`,
+          time: timeStr
+        });
+
+        const historyList = document.getElementById('sign-history-list');
+        if (historyList) {
+          historyList.innerHTML = signConversationHistory.map(item => `
+            <div class="sign-history-item" style="${item.icon === '🧠' ? 'border-color:#8b5cf6;background:rgba(139,92,246,0.1);' : ''}">
+              <div class="sign-history-avatar">${item.icon}</div>
+              <div class="sign-history-content">
+                <div class="sign-history-text">${item.text}</div>
+                <div class="sign-history-meta">${item.glosses} • ${item.time}</div>
+              </div>
+            </div>
+          `).join('');
+        }
+      } else {
+        if (statusChip) {
+          statusChip.className = 'ai-sign-status-chip idle';
+          statusChip.textContent = result.hand_description ? `🧠 Note: ${result.hand_description}` : '🧠 No clear sign recognized in frame — please hold hand clearly in view.';
+        }
+        showToast('Hold hand steady in front of camera for AI');
+      }
+    }
+  } catch (err) {
+    console.error('AI Sign interpretation error:', err);
+    if (statusChip) {
+      statusChip.className = 'ai-sign-status-chip idle';
+      statusChip.textContent = '🧠 AI Offline / Connecting: Using local ISL Dataset rules';
+    }
+  } finally {
+    isAiInterpreting = false;
+    if (btn) btn.disabled = false;
+  }
 }

@@ -1,9 +1,12 @@
 {
   "metadata": {
     "title": "EyeVoice Indian Sign Language (ISL) Standard Lexicon",
-    "version": "1.0.0",
+    "version": "2.1.0",
     "primary_language": "ISL",
-    "supported_target_languages": ["en", "ml"],
+    "supported_target_languages": [
+      "en",
+      "ml"
+    ],
     "authority": "Indian Sign Language Research and Training Centre (ISLRTC)",
     "references": [
       "ISLRTC Standard Dictionary (2021) - https://divyangjan.depwd.gov.in/islrtc/",
@@ -12,7 +15,8 @@
       "World Federation of the Deaf (WFD) Standards"
     ],
     "license": "CC-BY-4.0 Open Assistive Lexicon",
-    "verification_level": "ISLRTC Official & Research Verified"
+    "verification_level": "ISLRTC Official & Research Verified",
+    "total_signs": 62
   },
   "signs": [
     {
@@ -194,8 +198,20 @@
       "recognition_spec": {
         "hands_required": 2,
         "finger_states": {
-          "dominant": { "thumb": "extended", "index": "folded", "middle": "folded", "ring": "folded", "pinky": "folded" },
-          "non_dominant": { "thumb": "extended", "index": "extended", "middle": "extended", "ring": "extended", "pinky": "extended" }
+          "dominant": {
+            "thumb": "extended",
+            "index": "folded",
+            "middle": "folded",
+            "ring": "folded",
+            "pinky": "folded"
+          },
+          "non_dominant": {
+            "thumb": "extended",
+            "index": "extended",
+            "middle": "extended",
+            "ring": "extended",
+            "pinky": "extended"
+          }
         },
         "relative_location": "chest_neutral",
         "palm_facing": "upward_support",
@@ -319,8 +335,20 @@
       "recognition_spec": {
         "hands_required": 2,
         "finger_states": {
-          "dominant": { "thumb": "folded", "index": "extended", "middle": "extended", "ring": "folded", "pinky": "folded" },
-          "non_dominant": { "thumb": "extended", "index": "extended", "middle": "extended", "ring": "extended", "pinky": "extended" }
+          "dominant": {
+            "thumb": "folded",
+            "index": "extended",
+            "middle": "extended",
+            "ring": "folded",
+            "pinky": "folded"
+          },
+          "non_dominant": {
+            "thumb": "extended",
+            "index": "extended",
+            "middle": "extended",
+            "ring": "extended",
+            "pinky": "extended"
+          }
         },
         "relative_location": "wrist_contact",
         "palm_facing": "wrist_touch",
@@ -348,8 +376,20 @@
       "recognition_spec": {
         "hands_required": 2,
         "finger_states": {
-          "dominant": { "thumb": "folded", "index": "extended", "middle": "folded", "ring": "folded", "pinky": "folded" },
-          "non_dominant": { "thumb": "folded", "index": "extended", "middle": "folded", "ring": "folded", "pinky": "folded" }
+          "dominant": {
+            "thumb": "folded",
+            "index": "extended",
+            "middle": "folded",
+            "ring": "folded",
+            "pinky": "folded"
+          },
+          "non_dominant": {
+            "thumb": "folded",
+            "index": "extended",
+            "middle": "folded",
+            "ring": "folded",
+            "pinky": "folded"
+          }
         },
         "relative_location": "chest_center",
         "palm_facing": "inward_twist",
@@ -377,8 +417,20 @@
       "recognition_spec": {
         "hands_required": 2,
         "finger_states": {
-          "dominant": { "thumb": "extended", "index": "extended", "middle": "extended", "ring": "extended", "pinky": "extended" },
-          "non_dominant": { "thumb": "extended", "index": "extended", "middle": "extended", "ring": "extended", "pinky": "extended" }
+          "dominant": {
+            "thumb": "extended",
+            "index": "extended",
+            "middle": "extended",
+            "ring": "extended",
+            "pinky": "extended"
+          },
+          "non_dominant": {
+            "thumb": "extended",
+            "index": "extended",
+            "middle": "extended",
+            "ring": "extended",
+            "pinky": "extended"
+          }
         },
         "relative_location": "chest_to_forward",
         "palm_facing": "upward_outward",
@@ -513,6 +565,1376 @@
         "motion_vector": "head_tilt_rest",
         "facial_trigger": "relaxed_eyes",
         "min_hold_ms": 500
+      }
+    },
+    {
+      "id": "LETTER_A",
+      "gloss": "ISL_A",
+      "meaning_en": "Letter A",
+      "meaning_ml": "അക്ഷരം A",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-A",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Upright thumb or index pointing to thumb",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_B",
+      "gloss": "ISL_B",
+      "meaning_en": "Letter B",
+      "meaning_ml": "അക്ഷരം B",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-B",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Four fingers extended upright, thumb folded in front",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "extended"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_C",
+      "gloss": "ISL_C",
+      "meaning_en": "Letter C",
+      "meaning_ml": "അക്ഷരം C",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-C",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Hand curved in 'C' shape",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_D",
+      "gloss": "ISL_D",
+      "meaning_en": "Letter D",
+      "meaning_ml": "അക്ഷരം D",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-D",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Index pointing straight up with middle/thumb loop",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_E",
+      "gloss": "ISL_E",
+      "meaning_en": "Letter E",
+      "meaning_ml": "അക്ഷരം E",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-E",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Fingertips curled down to meet thumb tip",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_F",
+      "gloss": "ISL_F",
+      "meaning_en": "Letter F",
+      "meaning_ml": "അക്ഷരം F",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-F",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Index and thumb touching, middle/ring/pinky extended",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "folded",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "extended"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_G",
+      "gloss": "ISL_G",
+      "meaning_en": "Letter G",
+      "meaning_ml": "അക്ഷരം G",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-G",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Index and thumb parallel pointing horizontally",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_H",
+      "gloss": "ISL_H",
+      "meaning_en": "Letter H",
+      "meaning_ml": "അക്ഷരം H",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-H",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Index and middle extended horizontally together",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_I",
+      "gloss": "ISL_I",
+      "meaning_en": "Letter I",
+      "meaning_ml": "അക്ഷരം I",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-I",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Pinky finger extended upright, all other fingers folded",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "extended"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_J",
+      "gloss": "ISL_J",
+      "meaning_en": "Letter J",
+      "meaning_ml": "അക്ഷരം J",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-J",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Pinky finger drawing 'J' curve in the air",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "extended"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_K",
+      "gloss": "ISL_K",
+      "meaning_en": "Letter K",
+      "meaning_ml": "അക്ഷരം K",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-K",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Index upright, middle forward, thumb at base ('K')",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_L",
+      "gloss": "ISL_L",
+      "meaning_en": "Letter L",
+      "meaning_ml": "അക്ഷരം L",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-L",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Index finger upright, thumb extended sideways forming 'L'",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_M",
+      "gloss": "ISL_M",
+      "meaning_en": "Letter M",
+      "meaning_ml": "അക്ഷരം M",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-M",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Three fingers folded over thumb ('M')",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_N",
+      "gloss": "ISL_N",
+      "meaning_en": "Letter N",
+      "meaning_ml": "അക്ഷരം N",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-N",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Two fingers folded over thumb ('N')",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_O",
+      "gloss": "ISL_O",
+      "meaning_en": "Letter O",
+      "meaning_ml": "അക്ഷരം O",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-O",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "All fingers curved to form circular 'O' shape",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_P",
+      "gloss": "ISL_P",
+      "meaning_en": "Letter P",
+      "meaning_ml": "അക്ഷരം P",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-P",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "'K' hand pointing downwards ('P')",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_Q",
+      "gloss": "ISL_Q",
+      "meaning_en": "Letter Q",
+      "meaning_ml": "അക്ഷരം Q",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-Q",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "'G' hand pointing downwards ('Q')",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_R",
+      "gloss": "ISL_R",
+      "meaning_en": "Letter R",
+      "meaning_ml": "അക്ഷരം R",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-R",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Index and middle fingers crossed over each other",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_S",
+      "gloss": "ISL_S",
+      "meaning_en": "Letter S",
+      "meaning_ml": "അക്ഷരം S",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-S",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Tight fist with thumb folded across index/middle",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_T",
+      "gloss": "ISL_T",
+      "meaning_en": "Letter T",
+      "meaning_ml": "അക്ഷരം T",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-T",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Thumb tucked between index and middle fingers",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_U",
+      "gloss": "ISL_U",
+      "meaning_en": "Letter U",
+      "meaning_ml": "അക്ഷരം U",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-U",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Index and middle fingers extended upright together",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_V",
+      "gloss": "ISL_V",
+      "meaning_en": "Letter V",
+      "meaning_ml": "അക്ഷരം V",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-V",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Index and middle fingers extended apart forming 'V'",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_W",
+      "gloss": "ISL_W",
+      "meaning_en": "Letter W",
+      "meaning_ml": "അക്ഷരം W",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-W",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Index, middle, and ring fingers extended apart ('W')",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_X",
+      "gloss": "ISL_X",
+      "meaning_en": "Letter X",
+      "meaning_ml": "അക്ഷരം X",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-X",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Index finger bent into a hook shape",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_Y",
+      "gloss": "ISL_Y",
+      "meaning_en": "Letter Y",
+      "meaning_ml": "അക്ഷരം Y",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-Y",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Thumb and pinky extended, middle three folded ('Y' handshape)",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "extended"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "LETTER_Z",
+      "gloss": "ISL_Z",
+      "meaning_en": "Letter Z",
+      "meaning_ml": "അക്ഷരം Z",
+      "category": "alphabet",
+      "islrtc_ref": "#ALPHA-Z",
+      "verification_status": "ISLRTC Standard / ACL 2025 W-SLP",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Index finger tracing 'Z' in the air",
+        "orientation": "Palm facing conversational partner",
+        "location": "Mid-chest level",
+        "movement": "Steady hold or characteristic stroke",
+        "non_manual_markers": "Neutral focused gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "NUM_0",
+      "gloss": "NUMBER_0",
+      "meaning_en": "Zero",
+      "meaning_ml": "പൂജ്യം (0)",
+      "category": "numbers",
+      "islrtc_ref": "#NUM-0",
+      "verification_status": "ISLRTC Standard",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Hand representing digit 0",
+        "orientation": "Palm facing conversational partner",
+        "location": "Upper chest",
+        "movement": "Steady hold",
+        "non_manual_markers": "Neutral gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 350
+      }
+    },
+    {
+      "id": "NUM_1",
+      "gloss": "NUMBER_1",
+      "meaning_en": "One",
+      "meaning_ml": "ഒന്ന് (1)",
+      "category": "numbers",
+      "islrtc_ref": "#NUM-1",
+      "verification_status": "ISLRTC Standard",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Hand representing digit 1",
+        "orientation": "Palm facing conversational partner",
+        "location": "Upper chest",
+        "movement": "Steady hold",
+        "non_manual_markers": "Neutral gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 350
+      }
+    },
+    {
+      "id": "NUM_2",
+      "gloss": "NUMBER_2",
+      "meaning_en": "Two",
+      "meaning_ml": "രണ്ട് (2)",
+      "category": "numbers",
+      "islrtc_ref": "#NUM-2",
+      "verification_status": "ISLRTC Standard",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Hand representing digit 2",
+        "orientation": "Palm facing conversational partner",
+        "location": "Upper chest",
+        "movement": "Steady hold",
+        "non_manual_markers": "Neutral gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 350
+      }
+    },
+    {
+      "id": "NUM_3",
+      "gloss": "NUMBER_3",
+      "meaning_en": "Three",
+      "meaning_ml": "മൂന്ന് (3)",
+      "category": "numbers",
+      "islrtc_ref": "#NUM-3",
+      "verification_status": "ISLRTC Standard",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Hand representing digit 3",
+        "orientation": "Palm facing conversational partner",
+        "location": "Upper chest",
+        "movement": "Steady hold",
+        "non_manual_markers": "Neutral gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 350
+      }
+    },
+    {
+      "id": "NUM_4",
+      "gloss": "NUMBER_4",
+      "meaning_en": "Four",
+      "meaning_ml": "നാല് (4)",
+      "category": "numbers",
+      "islrtc_ref": "#NUM-4",
+      "verification_status": "ISLRTC Standard",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Hand representing digit 4",
+        "orientation": "Palm facing conversational partner",
+        "location": "Upper chest",
+        "movement": "Steady hold",
+        "non_manual_markers": "Neutral gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "extended"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 350
+      }
+    },
+    {
+      "id": "NUM_5",
+      "gloss": "NUMBER_5",
+      "meaning_en": "Five",
+      "meaning_ml": "അഞ്ച് (5)",
+      "category": "numbers",
+      "islrtc_ref": "#NUM-5",
+      "verification_status": "ISLRTC Standard",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Hand representing digit 5",
+        "orientation": "Palm facing conversational partner",
+        "location": "Upper chest",
+        "movement": "Steady hold",
+        "non_manual_markers": "Neutral gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "extended"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 350
+      }
+    },
+    {
+      "id": "NUM_6",
+      "gloss": "NUMBER_6",
+      "meaning_en": "Six",
+      "meaning_ml": "ആറ് (6)",
+      "category": "numbers",
+      "islrtc_ref": "#NUM-6",
+      "verification_status": "ISLRTC Standard",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Hand representing digit 6",
+        "orientation": "Palm facing conversational partner",
+        "location": "Upper chest",
+        "movement": "Steady hold",
+        "non_manual_markers": "Neutral gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "extended"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 350
+      }
+    },
+    {
+      "id": "NUM_7",
+      "gloss": "NUMBER_7",
+      "meaning_en": "Seven",
+      "meaning_ml": "ഏഴ് (7)",
+      "category": "numbers",
+      "islrtc_ref": "#NUM-7",
+      "verification_status": "ISLRTC Standard",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Hand representing digit 7",
+        "orientation": "Palm facing conversational partner",
+        "location": "Upper chest",
+        "movement": "Steady hold",
+        "non_manual_markers": "Neutral gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 350
+      }
+    },
+    {
+      "id": "NUM_8",
+      "gloss": "NUMBER_8",
+      "meaning_en": "Eight",
+      "meaning_ml": "എട്ട് (8)",
+      "category": "numbers",
+      "islrtc_ref": "#NUM-8",
+      "verification_status": "ISLRTC Standard",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Hand representing digit 8",
+        "orientation": "Palm facing conversational partner",
+        "location": "Upper chest",
+        "movement": "Steady hold",
+        "non_manual_markers": "Neutral gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 350
+      }
+    },
+    {
+      "id": "NUM_9",
+      "gloss": "NUMBER_9",
+      "meaning_en": "Nine",
+      "meaning_ml": "ഒൻപത് (9)",
+      "category": "numbers",
+      "islrtc_ref": "#NUM-9",
+      "verification_status": "ISLRTC Standard",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Hand representing digit 9",
+        "orientation": "Palm facing conversational partner",
+        "location": "Upper chest",
+        "movement": "Steady hold",
+        "non_manual_markers": "Neutral gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "folded",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "extended"
+        },
+        "relative_location": "chest",
+        "palm_facing": "forward",
+        "min_hold_ms": 350
+      }
+    },
+    {
+      "id": "EMERGENCY",
+      "gloss": "EMERGENCY / DANGER",
+      "meaning_en": "Emergency! I need urgent help immediately.",
+      "meaning_ml": "അടിയന്തരാവസ്ഥ! അടിയന്തര സഹായം വേണം.",
+      "category": "emergency",
+      "islrtc_ref": "#EMG-01",
+      "verification_status": "ISLRTC Official Standard",
+      "two_handed": true,
+      "parameters": {
+        "handshape": "Both hands open palms crossing sharply in front of chest",
+        "orientation": "Palms facing body",
+        "location": "Chest",
+        "movement": "Rapid alternating crossed arm wave",
+        "non_manual_markers": "Urgent alert expression, widened eyes"
+      },
+      "recognition_spec": {
+        "hands_required": 2,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "extended"
+        },
+        "relative_location": "chest",
+        "min_hold_ms": 300
+      }
+    },
+    {
+      "id": "MEDICINE",
+      "gloss": "MEDICINE",
+      "meaning_en": "I need my medicine / pills.",
+      "meaning_ml": "എനിക്ക് മരുന്ന് വേണം.",
+      "category": "medical",
+      "islrtc_ref": "#MED-02",
+      "verification_status": "ISLRTC Official Standard",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Dominant thumb and index forming small pill shape tapped at mouth or palm",
+        "orientation": "Towards mouth",
+        "location": "Mouth",
+        "movement": "Tapping motion towards lips",
+        "non_manual_markers": "Slight lip parting"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "mouth_chin",
+        "min_hold_ms": 400
+      }
+    },
+    {
+      "id": "HOSPITAL",
+      "gloss": "HOSPITAL",
+      "meaning_en": "Please take me to the hospital.",
+      "meaning_ml": "എന്നെ ആശുപത്രിയിൽ എത്തിക്കൂ.",
+      "category": "medical",
+      "islrtc_ref": "#MED-03",
+      "verification_status": "ISLRTC Official Standard",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Index finger tracing a cross '+' on upper shoulder or forehead",
+        "orientation": "Towards shoulder",
+        "location": "Face / Upper arm",
+        "movement": "Vertical stroke then horizontal stroke",
+        "non_manual_markers": "Serious expression"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "face",
+        "min_hold_ms": 400
+      }
+    },
+    {
+      "id": "BATHROOM",
+      "gloss": "BATHROOM / TOILET",
+      "meaning_en": "I need to use the bathroom.",
+      "meaning_ml": "എനിക്ക് ബാത്ത്റൂമിൽ പോകണം.",
+      "category": "personal_needs",
+      "islrtc_ref": "#PER-01",
+      "verification_status": "ISLRTC Official Standard",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "'T' hand (thumb between index and middle) shaking side to side",
+        "orientation": "Facing forward",
+        "location": "Upper chest",
+        "movement": "Repeated wrist twist / oscillation",
+        "non_manual_markers": "Direct gaze"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "min_hold_ms": 400
+      }
+    },
+    {
+      "id": "TIRED",
+      "gloss": "TIRED / EXHAUSTED",
+      "meaning_en": "I am feeling very tired.",
+      "meaning_ml": "എനിക്ക് ക്ഷീണം തോന്നുന്നു.",
+      "category": "feelings",
+      "islrtc_ref": "#FEEL-01",
+      "verification_status": "ISLRTC Official Standard",
+      "two_handed": true,
+      "parameters": {
+        "handshape": "Bent hands placed on chest dropping down slowly",
+        "orientation": "Towards body",
+        "location": "Chest",
+        "movement": "Downward slouching motion",
+        "non_manual_markers": "Drooping eyelids, exhale"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "min_hold_ms": 400
+      }
+    },
+    {
+      "id": "HUNGRY",
+      "gloss": "HUNGRY",
+      "meaning_en": "I am hungry, I want food.",
+      "meaning_ml": "എനിക്ക് വിശക്കുന്നു, ഭക്ഷണം വേണം.",
+      "category": "personal_needs",
+      "islrtc_ref": "#PER-02",
+      "verification_status": "ISLRTC Official Standard",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "'C' handshape moving down the center of chest from throat to stomach",
+        "orientation": "Facing body",
+        "location": "Chest",
+        "movement": "Slow downward stroke",
+        "non_manual_markers": "Expectant expression"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "min_hold_ms": 400
+      }
+    },
+    {
+      "id": "WHAT",
+      "gloss": "WHAT?",
+      "meaning_en": "What is happening? / What do you mean?",
+      "meaning_ml": "എന്താണ്? (What?)",
+      "category": "questions",
+      "islrtc_ref": "#Q-01",
+      "verification_status": "ISLRTC Official Standard",
+      "two_handed": true,
+      "parameters": {
+        "handshape": "Both open palms facing up, moving side-to-side",
+        "orientation": "Palms upward",
+        "location": "Neutral chest level",
+        "movement": "Side-to-side oscillation",
+        "non_manual_markers": "Furrowed eyebrows, slight head tilt"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "extended"
+        },
+        "relative_location": "chest",
+        "min_hold_ms": 350
+      }
+    },
+    {
+      "id": "WHERE",
+      "gloss": "WHERE?",
+      "meaning_en": "Where is it? / Where are we going?",
+      "meaning_ml": "എവിടെയാണ്? (Where?)",
+      "category": "questions",
+      "islrtc_ref": "#Q-02",
+      "verification_status": "ISLRTC Official Standard",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Index finger extended upright, wagging side to side",
+        "orientation": "Forward",
+        "location": "Upper chest",
+        "movement": "Left to right wagging motion",
+        "non_manual_markers": "Furrowed brow, searching eye movement"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "folded",
+          "index": "extended",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "min_hold_ms": 350
+      }
+    },
+    {
+      "id": "GOOD",
+      "gloss": "GOOD / NICE",
+      "meaning_en": "That is good. I like it.",
+      "meaning_ml": "നല്ലത് (Good)",
+      "category": "social",
+      "islrtc_ref": "#SOC-01",
+      "verification_status": "ISLRTC Official Standard",
+      "two_handed": false,
+      "parameters": {
+        "handshape": "Open hand touching chin and moving outward and down into non-dominant palm or thumbs-up",
+        "orientation": "Palms forward",
+        "location": "Chin to chest",
+        "movement": "Forward down sweep",
+        "non_manual_markers": "Gentle smile, affirmative nod"
+      },
+      "recognition_spec": {
+        "hands_required": 1,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "folded",
+          "middle": "folded",
+          "ring": "folded",
+          "pinky": "folded"
+        },
+        "relative_location": "chest",
+        "min_hold_ms": 350
+      }
+    },
+    {
+      "id": "FAMILY",
+      "gloss": "FAMILY",
+      "meaning_en": "My family is here.",
+      "meaning_ml": "എന്റെ കുടുംബം (Family)",
+      "category": "social",
+      "islrtc_ref": "#SOC-02",
+      "verification_status": "ISLRTC Official Standard",
+      "two_handed": true,
+      "parameters": {
+        "handshape": "Both 'F' hands tracing an outward circle touching index/thumb at finish",
+        "orientation": "Towards center",
+        "location": "Chest level",
+        "movement": "Outward circular arc",
+        "non_manual_markers": "Warm smile"
+      },
+      "recognition_spec": {
+        "hands_required": 2,
+        "finger_states": {
+          "thumb": "extended",
+          "index": "extended",
+          "middle": "extended",
+          "ring": "extended",
+          "pinky": "extended"
+        },
+        "relative_location": "chest",
+        "min_hold_ms": 400
       }
     }
   ]

@@ -944,6 +944,12 @@
       "category": "Quick Responses",
       "emergency": false,
       "timestamp": "2026-11-08 10:53:33"
+    },
+    {
+      "text": "Please help me.",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-08 11:36:51"
     }
   ]
 }
