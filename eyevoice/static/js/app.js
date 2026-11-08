@@ -2143,15 +2143,42 @@ async function renderSignToSpeechView(container) {
           </div>
         </div>
 
-        <!-- Section 2: Recognized Sign Sequence -->
+        <!-- Section 2: Fingerspelling Word Assembler & Sequence (emnikhil + imRishabhGupta) -->
         <div class="sign-section">
           <div class="sign-section-header">
-            <span>🧩 Signed Sequence</span>
-            <button class="btn-perm-back" style="margin-left:auto;padding:2px 8px;font-size:0.75rem;" onclick="clearSignSequence()">
-              🧹 Clear
-            </button>
+            <span>🧩 Fingerspelling Word Assembler &amp; Signed Sequence</span>
+            <div style="margin-left:auto;display:flex;gap:6px;">
+              <button class="btn-perm-back" style="padding:2px 8px;font-size:0.75rem;" onclick="backspaceSign()" title="Delete last letter or sign">
+                ⌫ Backspace
+              </button>
+              <button class="btn-perm-back" style="padding:2px 8px;font-size:0.75rem;" onclick="commitFingerspelledWord()" title="Commit current word into sentence">
+                ␣ Space / Add Word
+              </button>
+              <button class="btn-perm-back" style="padding:2px 8px;font-size:0.75rem;" onclick="clearSignSequence()">
+                🧹 Clear
+              </button>
+            </div>
           </div>
           <div class="sign-section-body" style="padding:10px 14px;">
+            <!-- Live Active Fingerspelling Word Buffer -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:6px 12px;background:var(--card-bg);border:1px dashed #3b82f6;border-radius:var(--radius-sm);">
+              <span style="font-size:0.8rem;font-weight:700;color:#3b82f6;">🔤 Active Word:</span>
+              <span id="sign-word-buffer" style="font-family:monospace;font-size:1.15rem;font-weight:800;letter-spacing:2px;color:var(--text);">_</span>
+              <span id="sign-disambiguation-pill" style="margin-left:auto;font-size:0.72rem;padding:2px 8px;border-radius:99px;background:rgba(59,130,246,0.12);color:#3b82f6;font-weight:600;display:none;"></span>
+            </div>
+
+            <!-- Predictive Word Suggestions (emnikhil style) -->
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+              <span style="font-size:0.75rem;font-weight:700;color:var(--text-dim);">💡 Suggestions:</span>
+              <div id="sign-word-suggestions" style="display:inline-flex;gap:6px;flex-wrap:wrap;">
+                <span class="pill-quick-reply" onclick="selectSuggestion('HELP')">🆘 HELP</span>
+                <span class="pill-quick-reply" onclick="selectSuggestion('DOCTOR')">👨‍⚕️ DOCTOR</span>
+                <span class="pill-quick-reply" onclick="selectSuggestion('WATER')">💧 WATER</span>
+                <span class="pill-quick-reply" onclick="selectSuggestion('PAIN')">⚡ PAIN</span>
+              </div>
+            </div>
+
+            <!-- Confirmed Full Sequence Chips -->
             <div id="sign-sequence-chips" style="display:flex;flex-wrap:wrap;gap:6px;min-height:32px;align-items:center;">
               <span style="color:var(--text-dim);font-size:0.85rem;font-style:italic;">No signs confirmed yet — perform a gesture</span>
             </div>
@@ -2362,6 +2389,38 @@ function onSignTrackerFrame(frameData) {
   const confEl = document.getElementById('sign-detect-conf');
   const holdFillEl = document.getElementById('sign-detect-hold-fill');
 
+  // Update live fingerspelling buffer display (emnikhil architecture)
+  const wordBufEl = document.getElementById('sign-word-buffer');
+  if (wordBufEl) {
+    wordBufEl.textContent = result.wordBuffer ? `${result.wordBuffer}_` : '_';
+  }
+
+  // Update real-time disambiguation reason pill (imRishabhGupta geometric classifier)
+  const disEl = document.getElementById('sign-disambiguation-pill');
+  if (disEl) {
+    if (result.disambiguationNote) {
+      disEl.textContent = `🔍 ${result.disambiguationNote}`;
+      disEl.style.display = 'inline-block';
+    } else {
+      disEl.style.display = 'none';
+    }
+  }
+
+  // Update predictive suggestion chips
+  const suggContainer = document.getElementById('sign-word-suggestions');
+  if (suggContainer && result.suggestions && result.suggestions.length > 0) {
+    const icons = {
+      HELP: '🆘', DOCTOR: '👨‍⚕️', WATER: '💧', PAIN: '⚡', HOSPITAL: '🏥',
+      MEDICINE: '💊', FOOD: '🍲', EMERGENCY: '🚨', FEVER: '🌡️', BATHROOM: '🚻',
+      YES: '✅', NO: '❌', PLEASE: '🙏', THANK: '❤️', FAMILY: '👨‍👩‍👧', MOTHER: '👩',
+      NURSE: '🩺', HEADACHE: '🤕', TABLET: '💊', REST: '🛏️', SLEEP: '😴', WHAT: '❓'
+    };
+    suggContainer.innerHTML = result.suggestions.map(w => {
+      const icon = icons[w] || '💡';
+      return `<span class="pill-quick-reply" onclick="selectSuggestion('${w}')">${icon} ${w}</span>`;
+    }).join('');
+  }
+
   if (result.currentSign) {
     if (glossEl) glossEl.textContent = result.currentSign.gloss;
     if (meaningEl) meaningEl.textContent = result.currentSign.meaning_en;
@@ -2429,15 +2488,7 @@ async function onSignConfirmed(sign) {
   showToast(`Sign Confirmed: ${sign.gloss}`);
 
   // Update sign sequence chips in UI
-  const seqContainer = document.getElementById('sign-sequence-chips');
-  if (seqContainer) {
-    const sequence = signRecognizerInstance.getSignSequence();
-    seqContainer.innerHTML = sequence.map((s, idx) => `
-      <span style="background:var(--card-bg);border:1px solid #10b981;border-radius:99px;padding:4px 10px;font-size:0.8rem;color:#10b981;font-weight:700;display:inline-flex;align-items:center;gap:4px;">
-        <span>${idx + 1}.</span> ${s.id}
-      </span>
-    `).join(' <span style="color:var(--text-dim);">➔</span> ');
-  }
+  updateSignSequenceChips();
 
   // Request natural translation
   await translateSignSequence();
@@ -2448,6 +2499,77 @@ async function onSignConfirmed(sign) {
     autoSpeakTimer = setTimeout(() => {
       speakSignSentence();
     }, 1500); // 1.5s pause trigger
+  }
+}
+
+function updateSignSequenceChips() {
+  const seqContainer = document.getElementById('sign-sequence-chips');
+  if (!seqContainer || !signRecognizerInstance) return;
+  const sequence = signRecognizerInstance.getSignSequence();
+  if (sequence.length === 0) {
+    seqContainer.innerHTML = '<span style="color:var(--text-dim);font-size:0.85rem;font-style:italic;">No signs confirmed yet — perform a gesture</span>';
+    return;
+  }
+  seqContainer.innerHTML = sequence.map((s, idx) => `
+    <span style="background:var(--card-bg);border:1px solid #10b981;border-radius:99px;padding:4px 10px;font-size:0.8rem;color:#10b981;font-weight:700;display:inline-flex;align-items:center;gap:4px;">
+      <span>${idx + 1}.</span> ${s.id}
+    </span>
+  `).join(' <span style="color:var(--text-dim);">➔</span> ');
+}
+
+/**
+ * Apply a selected predictive suggestion chip (emnikhil architecture)
+ */
+async function selectSuggestion(word) {
+  if (!signRecognizerInstance) return;
+  signRecognizerInstance.applySuggestion(word);
+  playClickChime();
+  showToast(`Auto-completed: ${word}`);
+
+  const wordBufEl = document.getElementById('sign-word-buffer');
+  if (wordBufEl) wordBufEl.textContent = '_';
+
+  updateSignSequenceChips();
+  await translateSignSequence();
+}
+
+/**
+ * Commit the currently typed fingerspelled word buffer into the sentence
+ */
+async function commitFingerspelledWord() {
+  if (!signRecognizerInstance) return;
+  const committed = signRecognizerInstance.commitCurrentWord('user_action');
+  if (committed) {
+    playClickChime();
+    showToast(`Word Added: ${committed.id}`);
+
+    const wordBufEl = document.getElementById('sign-word-buffer');
+    if (wordBufEl) wordBufEl.textContent = '_';
+
+    updateSignSequenceChips();
+    await translateSignSequence();
+  } else {
+    showToast('Fingerspell letters A-Z first to commit a word');
+  }
+}
+
+/**
+ * Backspace: delete last letter or remove last sign from sequence
+ */
+async function backspaceSign() {
+  if (!signRecognizerInstance) return;
+  const res = signRecognizerInstance.backspace();
+  playClickChime();
+  if (res) {
+    if (res.type === 'letter_deleted') {
+      showToast(`Deleted letter: ${res.remainingBuffer || 'empty'}`);
+      const wordBufEl = document.getElementById('sign-word-buffer');
+      if (wordBufEl) wordBufEl.textContent = res.remainingBuffer ? `${res.remainingBuffer}_` : '_';
+    } else if (res.type === 'sign_removed') {
+      showToast(`Removed sign: ${res.removedSign.id}`);
+      updateSignSequenceChips();
+      await translateSignSequence();
+    }
   }
 }
 
@@ -2557,7 +2679,9 @@ function clearSignSequence() {
   const transEl = document.getElementById('sign-translated-text');
   const malEl = document.getElementById('sign-malayalam-text');
   const speakBtn = document.getElementById('btn-sign-speak');
+  const wordBufEl = document.getElementById('sign-word-buffer');
 
+  if (wordBufEl) wordBufEl.textContent = '_';
   if (seqContainer) seqContainer.innerHTML = '<span style="color:var(--text-dim);font-size:0.85rem;font-style:italic;">No signs confirmed yet</span>';
   if (transEl) transEl.textContent = '"Awaiting sign input..."';
   if (malEl) malEl.textContent = '';
