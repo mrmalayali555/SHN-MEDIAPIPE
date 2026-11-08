@@ -932,6 +932,18 @@
       "category": "Quick Responses",
       "emergency": false,
       "timestamp": "2026-11-07 22:56:29"
+    },
+    {
+      "text": "Thank you very much.",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-08 10:50:58"
+    },
+    {
+      "text": "Please help me.",
+      "category": "Quick Responses",
+      "emergency": false,
+      "timestamp": "2026-11-08 10:53:33"
     }
   ]
 }
