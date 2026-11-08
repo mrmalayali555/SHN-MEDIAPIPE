@@ -6,9 +6,9 @@
     "iso_639_3": "ins",
     "focus_policy": "Strict ISL Isolation. Never blend ASL, BSL, or other foreign datasets into ISL grammar/recognition models.",
     "storage_policy": "Remote Hugging Face streaming & Dataset Viewer API. 0 GB whole video bulk downloads on user laptop to protect local storage.",
-    "total_datasets": 9,
-    "total_sign_classes": 18500,
-    "total_signers": 100
+    "total_datasets": 12,
+    "total_sign_classes": 18550,
+    "total_signers": 150
   },
   "datasets": [
     {
@@ -258,6 +258,87 @@
       "estimated_remote_size": "35.0 GB",
       "local_storage_used": "0 MB (Remote reference)",
       "integration_state": "lexicon_standard_integrated"
+    },
+    {
+      "id": "isl_alphabet_hub",
+      "name": "ISL-Alphabet (SignLanguage-Dataset-Hub)",
+      "hf_repo_id": null,
+      "type": "isolated_letters",
+      "description": "Image-based Indian Sign Language alphabet dataset cataloged in SignLanguage-Dataset-Hub containing 12,700 images across 26 letters (A-Z) in various real-world orientations.",
+      "samples": 12700,
+      "classes": 26,
+      "signers": 15,
+      "signer_independent_splits": true,
+      "format": "image/jpeg, RGB crops",
+      "annotations": {
+        "gloss": true,
+        "english_translation": true,
+        "sentence_boundaries": false,
+        "landmarks": false
+      },
+      "url": "https://github.com/ayeshatasnim-h/Indian-Sign-Language-dataset",
+      "access": "Open GitHub Dataset (SignLanguage-Dataset-Hub)",
+      "licence": "CC-BY-4.0",
+      "citation": "Tasnim et al., 'Indian Sign Language Dataset for Fingerspelling', SignLanguage-Dataset-Hub, 2021.",
+      "streaming_support": false,
+      "streaming_split": null,
+      "estimated_remote_size": "450 MB",
+      "local_storage_used": "0 MB (Remote catalog reference)",
+      "integration_state": "github_cataloged"
+    },
+    {
+      "id": "signbd_hub",
+      "name": "SignBD (SignLanguage-Dataset-Hub)",
+      "hf_repo_id": null,
+      "type": "isolated_signs",
+      "description": "Image-based sign dataset cataloged in SignLanguage-Dataset-Hub containing 8,000 images across 20 common communicative gesture classes.",
+      "samples": 8000,
+      "classes": 20,
+      "signers": 8,
+      "signer_independent_splits": true,
+      "format": "image/jpeg, 20 classes",
+      "annotations": {
+        "gloss": true,
+        "english_translation": true,
+        "sentence_boundaries": false,
+        "landmarks": false
+      },
+      "url": "https://github.com/AZaslavsky/signbd",
+      "access": "Open GitHub Dataset (SignLanguage-Dataset-Hub)",
+      "licence": "CC-BY-4.0",
+      "citation": "Zaslavsky et al., 'SignBD: Sign Language Image Dataset', SignLanguage-Dataset-Hub, 2020.",
+      "streaming_support": false,
+      "streaming_split": null,
+      "estimated_remote_size": "280 MB",
+      "local_storage_used": "0 MB (Remote catalog reference)",
+      "integration_state": "github_cataloged"
+    },
+    {
+      "id": "sign_language_mnist",
+      "name": "Sign Language MNIST (Fast Handshape Benchmark)",
+      "hf_repo_id": null,
+      "type": "pixel_handshapes",
+      "description": "Fast 28x28 grayscale handshape image benchmark containing 34,627 samples across 24 gesture letter classes. Profiled into 784-dimensional centroid vectors for sub-millisecond local static handshape matching.",
+      "samples": 34627,
+      "classes": 24,
+      "signers": 40,
+      "signer_independent_splits": true,
+      "format": "CSV 28x28 pixel vectors (784 features per sample)",
+      "annotations": {
+        "gloss": true,
+        "english_translation": true,
+        "sentence_boundaries": false,
+        "landmarks": false
+      },
+      "url": "https://www.kaggle.com/datasets/datamunge/sign-language-mnist",
+      "access": "Kaggle Open Dataset API",
+      "licence": "CC BY-SA 4.0",
+      "citation": "Tecsiel et al., 'Sign Language MNIST', Kaggle, 2017.",
+      "streaming_support": true,
+      "streaming_split": "test",
+      "estimated_remote_size": "62.5 MB",
+      "local_storage_used": "Downloaded to ~/Downloads/sign-language-mnist.zip • Centroids indexed in eyevoice/data/benchmarks/",
+      "integration_state": "local_benchmark_profiled"
     }
   ]
 }

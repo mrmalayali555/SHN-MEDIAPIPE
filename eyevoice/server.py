@@ -362,6 +362,26 @@ def get_isl_full_lexicon():
     return jsonify({"categories": []})
 
 
+@app.route("/api/isl/mnist-benchmark", methods=["GET"])
+def get_mnist_benchmark():
+    """Return the profiled Sign Language MNIST benchmark centroids and metadata."""
+    p = _find_file("data/benchmarks/sign_mnist_centroids.json")
+    if p and p.exists():
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return jsonify({
+                    "dataset": data.get("dataset"),
+                    "classes": data.get("classes"),
+                    "total_samples": data.get("total_samples_profiled"),
+                    "vector_dim": data.get("vector_dim"),
+                    "characters": [c["char"] for c in data.get("centroids", {}).values()]
+                })
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    return jsonify({"error": "Benchmark centroids not found"}), 404
+
+
 @app.route("/api/isl/connectivity", methods=["GET"])
 def get_isl_connectivity():
     """Test connection latency to Hugging Face, Mendeley, and Govt ISL Portal."""
