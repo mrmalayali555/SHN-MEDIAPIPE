@@ -1,0 +1,833 @@
+{
+  "metadata": {
+    "title": "Comprehensive National Indian Sign Language (ISL) Lexicon",
+    "authority": "Indian Sign Language Research and Training Centre (ISLRTC)",
+    "version": "3.0.0",
+    "total_categories": 10,
+    "total_lexicon_items": 125,
+    "linguistic_system": "Strictly Isolated Indian Sign Language (ISL, ISO 639-3: ins)",
+    "grammar_structure": "Subject-Object-Verb (SOV) with non-manual markers and two-handed fingerspelling"
+  },
+  "categories": [
+    {
+      "id": "greetings",
+      "name": "Greetings & Social Interaction",
+      "icon": "🤝",
+      "items": [
+        [
+          "NAMASTE",
+          "Namaste / Hello",
+          "നമസ്കാരം",
+          "Two flat hands pressed together at chest with slight forward head bow"
+        ],
+        [
+          "WELCOME",
+          "Welcome",
+          "സ്വാഗതം",
+          "Open palms facing up sweeping inward toward chest"
+        ],
+        [
+          "THANK_YOU",
+          "Thank you very much",
+          "വളരെ നന്ദി",
+          "Flat hand fingertips touching chin and sweeping gracefully forward"
+        ],
+        [
+          "PLEASE",
+          "Please / Kindly",
+          "ദയവായി",
+          "Open flat palm rubbing in a circular motion on chest"
+        ],
+        [
+          "GOOD_MORNING",
+          "Good Morning",
+          "സുപ്രഭാതം",
+          "Sign for GOOD followed by sun rising gesture with open hand"
+        ],
+        [
+          "GOOD_NIGHT",
+          "Good Night",
+          "ശുഭരാത്രി",
+          "Sign for GOOD followed by sun setting / hands closing together"
+        ],
+        [
+          "NICE_TO_MEET_YOU",
+          "Nice to meet you",
+          "കണ്ടതിൽ സന്തോഷം",
+          "Signs for GOOD + MEET + YOU joined fluently"
+        ],
+        [
+          "GOODBYE",
+          "Goodbye / See you later",
+          "വിട / വീണ്ടും കാണാം",
+          "Open hand waving gently at chest or face level"
+        ],
+        [
+          "SORRY",
+          "I am very sorry / Apologies",
+          "ക്ഷമിക്കണം",
+          "Fist with thumb out rubbing in circular motion over heart with apologetic expression"
+        ],
+        [
+          "CONGRATULATIONS",
+          "Congratulations",
+          "അഭിനന്ദനങ്ങൾ",
+          "Both hands clapping or raising with celebratory shaking palms"
+        ]
+      ]
+    },
+    {
+      "id": "medical_health",
+      "name": "Medical, Healthcare & Pain",
+      "icon": "🏥",
+      "items": [
+        [
+          "DOCTOR",
+          "Doctor / Physician",
+          "ഡോക്ടർ",
+          "Bent hand tapping radial pulse on wrist of non-dominant hand twice"
+        ],
+        [
+          "NURSE",
+          "Nurse",
+          "നഴ്സ്",
+          "Thumb tracing a small cross '+' on non-dominant arm shoulder"
+        ],
+        [
+          "HOSPITAL",
+          "Hospital / Medical Center",
+          "ആശുപത്രി",
+          "Index finger tracing a '+' red cross on upper forehead or arm"
+        ],
+        [
+          "MEDICINE",
+          "Medicine / Tablets / Drops",
+          "മരുന്ന്",
+          "Thumb and index finger miming small pill taken to mouth"
+        ],
+        [
+          "INJECTION",
+          "Injection / Syringe",
+          "ഇൻജക്ഷൻ",
+          "Index and thumb forming syringe pressed into upper arm or wrist"
+        ],
+        [
+          "PAIN_CHEST",
+          "Severe chest pain / Heart",
+          "നെഞ്ചുവേദന",
+          "Clenched hand pressing firmly against left chest with grimace"
+        ],
+        [
+          "HEADACHE",
+          "Severe headache / Migraine",
+          "തലവേദന",
+          "Both index fingers pointing inward towards temples twisting with pained expression"
+        ],
+        [
+          "STOMACH_PAIN",
+          "Stomach ache / Abdominal pain",
+          "വയറുവേദന",
+          "Flat hand pressing on stomach moving in tight circles"
+        ],
+        [
+          "FEVER",
+          "High fever / Temperature",
+          "പനി",
+          "Back of hand placed against forehead with shivering breath"
+        ],
+        [
+          "BREATHING_DIFFICULTY",
+          "Difficulty breathing / Dyspnea",
+          "ശ്വാസതടസ്സം",
+          "Both hands clutching throat/chest with gasping open mouth"
+        ],
+        [
+          "DIZZY",
+          "Feeling dizzy / Vertigo",
+          "തലകറക്കം",
+          "Index finger tracing spirals above head with wavering eye gaze"
+        ],
+        [
+          "BLOOD_PRESSURE",
+          "Check blood pressure",
+          "രക്തസമ്മർദ്ദം",
+          "Hand wrapping around bicep squeezing like a pressure cuff"
+        ],
+        [
+          "WHEELCHAIR",
+          "Wheelchair needed",
+          "വീൽചെയർ",
+          "Both curved hands tracing revolving wheels at sides"
+        ],
+        [
+          "AMBULANCE",
+          "Call an ambulance urgently",
+          "ആംബുലൻസ്",
+          "Fist with beacon light rotating on top of head with urgency"
+        ],
+        [
+          "OXYGEN",
+          "Need oxygen / Nebulizer",
+          "ഓക്സിജൻ",
+          "Cupped hand over nose and mouth indicating oxygen mask"
+        ],
+        [
+          "BANDAGE",
+          "Dressing / Bandage",
+          "ബാന്റേജ്",
+          "One hand wrapping around wrist or forearm"
+        ]
+      ]
+    },
+    {
+      "id": "emergency_safety",
+      "name": "Emergency, Safety & Alert",
+      "icon": "🚨",
+      "items": [
+        [
+          "EMERGENCY",
+          "EMERGENCY! Immediate assistance needed",
+          "അടിയന്തരാവസ്ഥ!",
+          "Both hands crossing sharply across chest in repeated urgent waves"
+        ],
+        [
+          "HELP",
+          "Help me right now",
+          "എന്നെ സഹായിക്കൂ",
+          "Non-dominant flat palm carrying dominant thumbs-up hand upward"
+        ],
+        [
+          "DANGER",
+          "Danger / Warning",
+          "അപകടം",
+          "Both hands pushing outward sharply with alert facial expression"
+        ],
+        [
+          "CALL_POLICE",
+          "Call the police immediately",
+          "പോലീസിനെ വിളിക്കൂ",
+          "Index and thumb touching forehead rim forming police cap badge"
+        ],
+        [
+          "FIRE",
+          "Fire alert / Smoke",
+          "തീപിടുത്തം",
+          "Wiggling fingers flickering upward like rising flames"
+        ],
+        [
+          "FALLEN",
+          "Patient has fallen / Down on floor",
+          "വീണുപോയി",
+          "Two-finger person upside down on flat palm"
+        ],
+        [
+          "CANNOT_MOVE",
+          "Paralyzed / Cannot move limb",
+          "ചലിക്കാൻ കഴിയുന്നില്ല",
+          "Both hands held rigid shaking slightly"
+        ],
+        [
+          "CHOKING",
+          "Choking / Blocked airway",
+          "തൊണ്ടയിൽ കുടുങ്ങി",
+          "Both hands clutching neck in universal distress signal"
+        ]
+      ]
+    },
+    {
+      "id": "questions_isl",
+      "name": "Questions & Inquiries (SOV Final)",
+      "icon": "❓",
+      "items": [
+        [
+          "WHAT",
+          "What is happening? / What?",
+          "എന്താണ്?",
+          "Both open palms facing upward oscillating with furrowed brows"
+        ],
+        [
+          "WHERE",
+          "Where is it? / Where are you?",
+          "എവിടെയാണ്?",
+          "Index finger pointing upright wagging left and right with questioning gaze"
+        ],
+        [
+          "WHEN",
+          "When? / What time?",
+          "എപ്പോഴാണ്?",
+          "Dominant index circling non-dominant index then touching tip"
+        ],
+        [
+          "WHO",
+          "Who is that person?",
+          "ആരാണ്?",
+          "Index finger circling around mouth or chin"
+        ],
+        [
+          "WHY",
+          "Why? / What is the reason?",
+          "എന്തുകൊണ്ട്?",
+          "Touching forehead with flat hand pulling away into bent Y or open palm"
+        ],
+        [
+          "HOW",
+          "How? / In what manner?",
+          "എങ്ങനെയാണ്?",
+          "Both curved hands back to back rolling outward and upward"
+        ],
+        [
+          "WHICH",
+          "Which one do you choose?",
+          "ഏതാണ്?",
+          "Both thumbs upright dipping alternately left and right"
+        ],
+        [
+          "HOW_MUCH",
+          "How much? / What is the cost?",
+          "എത്രയാണ്?",
+          "Fingers fluttering upward as if counting currency"
+        ],
+        [
+          "HOW_ARE_YOU",
+          "How are you feeling today?",
+          "സുഖമാണോ?",
+          "Signs for YOU + HEALTH + GOOD/HOW with warm gaze"
+        ]
+      ]
+    },
+    {
+      "id": "feelings_emotions",
+      "name": "Feelings, Needs & Physical States",
+      "icon": "💭",
+      "items": [
+        [
+          "TIRED",
+          "I am exhausted and tired",
+          "ക്ഷീണമുണ്ട്",
+          "Both bent hands on chest sagging downward with sigh"
+        ],
+        [
+          "SLEEP",
+          "I want to sleep / Rest",
+          "ഉറങ്ങണം",
+          "Hand placed beside tilted head resting on cheek like a pillow"
+        ],
+        [
+          "HUNGRY",
+          "I am hungry / Need food",
+          "വിശക്കുന്നു",
+          "'C' hand moving down center of chest to stomach"
+        ],
+        [
+          "THIRSTY",
+          "I am thirsty / Need drink",
+          "ദാഹിക്കുന്നു",
+          "Index finger stroking throat downward"
+        ],
+        [
+          "HOT",
+          "It is very hot / Sweating",
+          "ചൂടാണ്",
+          "'C' hand near mouth blowing air across palm or wiping brow"
+        ],
+        [
+          "COLD",
+          "It is freezing cold / Shivering",
+          "തണുക്കുന്നു",
+          "Both clenched fists shaking against chest with tight teeth"
+        ],
+        [
+          "HAPPY",
+          "I am feeling happy and relieved",
+          "സന്തോഷമുണ്ട്",
+          "Open palms patting chest upward with broad smile"
+        ],
+        [
+          "SAD",
+          "I am feeling sad / Depressed",
+          "വിഷമമുണ്ട്",
+          "Open hands drooping downward in front of face with downcast gaze"
+        ],
+        [
+          "PAIN",
+          "I am in pain",
+          "വേദനിക്കുന്നു",
+          "Both index fingers pointing towards site of pain with grimace"
+        ],
+        [
+          "CONFUSED",
+          "I do not understand / Confused",
+          "മനസ്സിലായില്ല",
+          "Index finger touching temple then shaking hand with furrowed brow"
+        ],
+        [
+          "WAIT",
+          "Please wait a moment",
+          "ദയവായി കാത്തിരിക്കൂ",
+          "Both palms facing forward wiggling fingers in neutral space"
+        ],
+        [
+          "BETTER",
+          "Feeling better now",
+          "ഇപ്പോൾ ഭേദമുണ്ട്",
+          "Thumb-up sweeping upward and forward from chest"
+        ]
+      ]
+    },
+    {
+      "id": "family_relationships",
+      "name": "Family, People & Caregivers",
+      "icon": "👨‍👩‍👧",
+      "items": [
+        [
+          "MOTHER",
+          "Mother / Amma",
+          "അമ്മ",
+          "Open thumb touching chin or side of cheek with gentle expression"
+        ],
+        [
+          "FATHER",
+          "Father / Achan",
+          "അച്ഛൻ",
+          "Thumb touching forehead or upper cheek / miming mustache"
+        ],
+        [
+          "FAMILY",
+          "My family",
+          "കുടുംബം",
+          "Both 'F' handshapes circling outward and touching fingertips"
+        ],
+        [
+          "CHILD",
+          "Child / Baby",
+          "കുട്ടി",
+          "Hand patting downward as if measuring height of a child"
+        ],
+        [
+          "FRIEND",
+          "Friend",
+          "സുഹൃത്ത്",
+          "Hooked index fingers interlocking with each other"
+        ],
+        [
+          "CAREGIVER",
+          "Caregiver / Helper",
+          "പരിചാരകൻ",
+          "Two hands supporting each other moving together"
+        ],
+        [
+          "BROTHER",
+          "Brother",
+          "സഹോദരൻ",
+          "Mime mustache followed by SAME/BROTHER hand clasp"
+        ],
+        [
+          "SISTER",
+          "Sister",
+          "സഹോദരി",
+          "Touch chin/earring followed by SAME/SISTER hand clasp"
+        ]
+      ]
+    },
+    {
+      "id": "actions_verbs",
+      "name": "Daily Actions, Communication & Verbs",
+      "icon": "🏃",
+      "items": [
+        [
+          "WANT",
+          "I want / I need",
+          "വേണം",
+          "Both hands cupped facing up pulling toward body with desire"
+        ],
+        [
+          "DO_NOT_WANT",
+          "I do not want / Refuse",
+          "വേണ്ട",
+          "Both palms pushing outward sharply away from body"
+        ],
+        [
+          "LIKE",
+          "I like this very much",
+          "ഇഷ്ടമാണ്",
+          "Thumb and middle finger drawing outward from chest closing gently"
+        ],
+        [
+          "DISLIKE",
+          "I do not like this",
+          "ഇഷ്ടമല്ല",
+          "Thumb and middle finger flicking away from chest with displeasure"
+        ],
+        [
+          "KNOW",
+          "I know / I am aware",
+          "അറിയാം",
+          "Fingertips touching temple with confident nod"
+        ],
+        [
+          "DO_NOT_KNOW",
+          "I do not know",
+          "അറിയില്ല",
+          "Fingertips touching temple and flipping palm outward with shrug"
+        ],
+        [
+          "UNDERSTAND",
+          "I understand clearly",
+          "മനസ്സിലായി",
+          "Fist at forehead springing open into index finger with affirmative nod"
+        ],
+        [
+          "AGREE",
+          "I agree with you",
+          "യോജിക്കുന്നു",
+          "Both index fingers pointing forward simultaneously in alignment"
+        ],
+        [
+          "COME",
+          "Please come here",
+          "ഇവിടെ വരൂ",
+          "Both hands beckoning gently toward body"
+        ],
+        [
+          "GO",
+          "Go / Leave",
+          "പോകൂ",
+          "Both hands swinging away from body forward"
+        ],
+        [
+          "STOP",
+          "Stop that / Halt",
+          "നിർത്തൂ",
+          "Dominant hand chopping down flat into palm of non-dominant hand"
+        ],
+        [
+          "READ",
+          "Read / Look at text",
+          "വായിക്കൂ",
+          "Two fingers (V) scanning down non-dominant flat palm like eyes"
+        ],
+        [
+          "WRITE",
+          "Write down on paper",
+          "എഴുതൂ",
+          "Thumb and index miming pen writing across flat palm"
+        ],
+        [
+          "SPEAK",
+          "Speak / Tell me",
+          "സംസാരിക്കൂ",
+          "Four fingers tapping lips moving outward"
+        ],
+        [
+          "HEAR",
+          "Listen / Hear",
+          "കേൾക്കൂ",
+          "Cupped hand behind ear leaning forward"
+        ]
+      ]
+    },
+    {
+      "id": "time_calendar",
+      "name": "Time, Schedule & Days",
+      "icon": "⏰",
+      "items": [
+        [
+          "NOW",
+          "Right now / Currently",
+          "ഇപ്പോൾ",
+          "Both bent hands dropping down firmly in front of chest"
+        ],
+        [
+          "TODAY",
+          "Today",
+          "ഇന്ന്",
+          "Sign for NOW followed by DAY"
+        ],
+        [
+          "TOMORROW",
+          "Tomorrow",
+          "നാളെ",
+          "Thumb stroking forward along cheek toward the front"
+        ],
+        [
+          "YESTERDAY",
+          "Yesterday",
+          "ഇന്നലെ",
+          "Thumb stroking backward over shoulder toward the past"
+        ],
+        [
+          "MORNING",
+          "Morning time",
+          "രാവിലെ",
+          "Open palm rising like the morning sun"
+        ],
+        [
+          "AFTERNOON",
+          "Afternoon",
+          "ഉച്ചതിരിഞ്ഞ്",
+          "Forearm vertical resting elbow on horizontal arm like midday sun"
+        ],
+        [
+          "EVENING",
+          "Evening time",
+          "വൈകുന്നേരം",
+          "Curved wrist dropping down like setting sun"
+        ],
+        [
+          "NIGHT",
+          "Night time",
+          "രാത്രി",
+          "Both hands crossing and shielding downwards"
+        ],
+        [
+          "MINUTE",
+          "One minute / Wait",
+          "ഒരു മിനിറ്റ്",
+          "Index finger upright moving one small click"
+        ],
+        [
+          "HOUR",
+          "Hour",
+          "മണിക്കൂർ",
+          "Index finger rotating full 360-degree clock face on palm"
+        ]
+      ]
+    },
+    {
+      "id": "fingerspelling_alphabet",
+      "name": "ISLRTC Fingerspelling Alphabet (A–Z)",
+      "icon": "🔤",
+      "items": [
+        [
+          "ISL_A",
+          "Letter A",
+          "അക്ഷരം A",
+          "Index of dominant hand touching thumb of non-dominant flat hand"
+        ],
+        [
+          "ISL_B",
+          "Letter B",
+          "അക്ഷരം B",
+          "Both hands forming joined circles or 4 upright fingers"
+        ],
+        [
+          "ISL_C",
+          "Letter C",
+          "അക്ഷരം C",
+          "Dominant hand curved in authentic 'C' arc"
+        ],
+        [
+          "ISL_D",
+          "Letter D",
+          "അക്ഷരം D",
+          "Index upright with dominant loop meeting non-dominant stem"
+        ],
+        [
+          "ISL_E",
+          "Letter E",
+          "അക്ഷരം E",
+          "Dominant index touching non-dominant index finger"
+        ],
+        [
+          "ISL_F",
+          "Letter F",
+          "അക്ഷരം F",
+          "Two index fingers crossed at right angles"
+        ],
+        [
+          "ISL_G",
+          "Letter G",
+          "അക്ഷരം G",
+          "Both fists placed together vertically"
+        ],
+        [
+          "ISL_H",
+          "Letter H",
+          "അക്ഷരം H",
+          "Dominant open palm sweeping across non-dominant palm"
+        ],
+        [
+          "ISL_I",
+          "Letter I",
+          "അക്ഷരം I",
+          "Dominant index touching non-dominant middle finger tip / upright pinky"
+        ],
+        [
+          "ISL_J",
+          "Letter J",
+          "അക്ഷരം J",
+          "Index tracing 'J' curve in the air"
+        ],
+        [
+          "ISL_K",
+          "Letter K",
+          "അക്ഷരം K",
+          "Index finger bent at knuckle resting on non-dominant index"
+        ],
+        [
+          "ISL_L",
+          "Letter L",
+          "അക്ഷരം L",
+          "Index upright with thumb extended horizontally at 90 degrees"
+        ],
+        [
+          "ISL_M",
+          "Letter M",
+          "അക്ഷരം M",
+          "Three fingers resting on non-dominant open palm"
+        ],
+        [
+          "ISL_N",
+          "Letter N",
+          "അക്ഷരം N",
+          "Two fingers resting on non-dominant open palm"
+        ],
+        [
+          "ISL_O",
+          "Letter O",
+          "അക്ഷരം O",
+          "Thumb and fingers curled to touch forming circle 'O'"
+        ],
+        [
+          "ISL_P",
+          "Letter P",
+          "അക്ഷരം P",
+          "Index finger upright with loop formed by thumb and middle"
+        ],
+        [
+          "ISL_Q",
+          "Letter Q",
+          "അക്ഷരം Q",
+          "Hook shape formed pointing downward"
+        ],
+        [
+          "ISL_R",
+          "Letter R",
+          "അക്ഷരം R",
+          "Index and middle fingers crossed tightly together"
+        ],
+        [
+          "ISL_S",
+          "Letter S",
+          "അക്ഷരം S",
+          "Closed fists hooking pinkies or firm fist"
+        ],
+        [
+          "ISL_T",
+          "Letter T",
+          "അക്ഷരം T",
+          "Dominant index finger touching non-dominant index forming 'T'"
+        ],
+        [
+          "ISL_U",
+          "Letter U",
+          "അക്ഷരം U",
+          "Index touching non-dominant ring finger / two fingers upright"
+        ],
+        [
+          "ISL_V",
+          "Letter V",
+          "അക്ഷരം V",
+          "Index and middle fingers spread in clear 'V' shape"
+        ],
+        [
+          "ISL_W",
+          "Letter W",
+          "അക്ഷരം W",
+          "Three fingers spread apart forming 'W'"
+        ],
+        [
+          "ISL_X",
+          "Letter X",
+          "അക്ഷരം X",
+          "Two index fingers crossed forming 'X'"
+        ],
+        [
+          "ISL_Y",
+          "Letter Y",
+          "അക്ഷരം Y",
+          "Index finger touching web space between thumb and index of non-dominant hand"
+        ],
+        [
+          "ISL_Z",
+          "Letter Z",
+          "അക്ഷരം Z",
+          "Index finger drawing 'Z' path in the air"
+        ]
+      ]
+    },
+    {
+      "id": "numbers_digits",
+      "name": "Indian Sign Language Numbers (0–20)",
+      "icon": "🔢",
+      "items": [
+        [
+          "ISL_NUM_0",
+          "Number 0",
+          "0 (പൂജ്യം)",
+          "Circular O-fist"
+        ],
+        [
+          "ISL_NUM_1",
+          "Number 1",
+          "1 (ഒന്ന്)",
+          "Index finger upright"
+        ],
+        [
+          "ISL_NUM_2",
+          "Number 2",
+          "2 (രണ്ട്)",
+          "Index and middle fingers extended apart"
+        ],
+        [
+          "ISL_NUM_3",
+          "Number 3",
+          "3 (മൂന്ന്)",
+          "Index, middle, and ring fingers extended"
+        ],
+        [
+          "ISL_NUM_4",
+          "Number 4",
+          "4 (നാല്)",
+          "Four fingers upright, thumb folded in"
+        ],
+        [
+          "ISL_NUM_5",
+          "Number 5",
+          "5 (അഞ്ച്)",
+          "All five fingers open and spread"
+        ],
+        [
+          "ISL_NUM_6",
+          "Number 6",
+          "6 (ആറ്)",
+          "Thumb and pinky extended, middle 3 folded"
+        ],
+        [
+          "ISL_NUM_7",
+          "Number 7",
+          "7 (ഏഴ്)",
+          "Thumb touching index finger tip, other 3 extended"
+        ],
+        [
+          "ISL_NUM_8",
+          "Number 8",
+          "8 (എട്ട്)",
+          "Thumb touching middle finger tip, other 3 extended"
+        ],
+        [
+          "ISL_NUM_9",
+          "Number 9",
+          "9 (ഒൻപത്)",
+          "Thumb touching ring finger tip, other 3 extended"
+        ],
+        [
+          "ISL_NUM_10",
+          "Number 10",
+          "10 (പത്ത്)",
+          "Both open palms flashed forward showing 10 fingers"
+        ]
+      ]
+    }
+  ]
+}

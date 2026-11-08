@@ -289,38 +289,40 @@ def call_gemini_vision(
     return None
 
 
-_SIGN_INTERPRET_PROMPT = """You are an expert sign language interpreter with knowledge of ISL (Indian Sign Language), ASL (American Sign Language), BSL (British Sign Language), and international sign systems.
+_SIGN_INTERPRET_PROMPT = """You are an expert, certified Indian Sign Language (ISL) interpreter trained in the national standards of the Indian Sign Language Research and Training Centre (ISLRTC, DEPwD, Government of India).
 
-Analyze this webcam frame showing a person making hand signs/gestures. Look at:
-1. Hand shape (which fingers are extended/folded, thumb position)
-2. Hand orientation (palm facing direction)
-3. Hand location relative to body (face, chest, waist)
-4. Both hands if visible (are they mirroring, interacting, or independent?)
-5. Facial expression (eyebrow raise = question, head shake = negation)
+You are observing a person signing via webcam in real time. They communicate using Indian Sign Language (ISL).
+Analyze this webcam frame with meticulous linguistic accuracy. Evaluate:
+1. 3D Handshape: Which fingers are extended, curled, crossed, or touching thumb (e.g. B-hand, C-hand, A-hand, V-shape, 2-handed ISLRTC contact).
+2. Orientation: Direction of palms (facing body, conversational partner, upward, or lateral).
+3. Location: Body anchor site (chin, mouth, forehead, temple, chest, shoulder, or neutral signing space).
+4. Two-Handed Relationship: Dominant and non-dominant hand coordination (mirroring, active-passive, touching).
+5. Non-Manual Markers (NMM): Eyebrow elevation (questions), headshake (negation), head nod (affirmation), lip movements.
 
-Based on your analysis, determine:
-- What sign or gesture is being performed
-- The most likely meaning in English
-- Confidence level (high/medium/low)
+Determine the exact sign, fingerspelled letter sequence, or complete ISL sentence being performed.
+Translate their intended message into a single natural, fluent English sentence and a Malayalam sentence.
 
 Return ONLY a JSON object:
 {
   "detected": true,
-  "sign_name": "Name of the sign (e.g. HELLO, THANK_YOU, I_WANT_WATER)",
-  "meaning_en": "English translation of what the person is saying",
-  "sign_language": "ISL/ASL/BSL/Universal",
-  "confidence": "high/medium/low",
-  "hand_description": "Brief description of hand configuration seen",
+  "sign_name": "ISL Sign Gloss or Concept (e.g. NAMASTE, EMERGENCY, TIRED, HOW ARE YOU, NEED HELP, WHERE IS DOCTOR)",
+  "meaning_en": "Natural, complete, first-person English sentence to speak aloud",
+  "meaning_ml": "സ്വാഭാവിക മലയാളം വാചകം",
+  "sign_language": "Indian Sign Language (ISL)",
+  "confidence": "high",
+  "hand_description": "Detailed description of handshape, orientation and placement seen in frame",
   "is_signing": true
 }
 
-If no clear sign is detected (hands not visible, ambiguous gesture, or person is just resting):
+If no sign is being made (e.g. hands relaxed at side, empty frame, or resting):
 {
   "detected": false,
   "sign_name": null,
   "meaning_en": "",
+  "meaning_ml": "",
+  "sign_language": "Indian Sign Language (ISL)",
   "confidence": "low",
-  "hand_description": "Description of what you see",
+  "hand_description": "Hands resting or neutral",
   "is_signing": false
 }"""
 

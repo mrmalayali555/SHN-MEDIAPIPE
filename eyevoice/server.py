@@ -349,6 +349,19 @@ def get_isl_catalog_file():
     return jsonify(_load_isl_catalog())
 
 
+@app.route("/api/isl/full-lexicon", methods=["GET"])
+def get_isl_full_lexicon():
+    """Return the full-scale ISLRTC National Standard Lexicon Database."""
+    p = _find_file("data/isl_full_lexicon.json")
+    if p and p.exists():
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                return jsonify(json.load(f))
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    return jsonify({"categories": []})
+
+
 @app.route("/api/isl/connectivity", methods=["GET"])
 def get_isl_connectivity():
     """Test connection latency to Hugging Face, Mendeley, and Govt ISL Portal."""

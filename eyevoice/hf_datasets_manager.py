@@ -222,3 +222,4 @@ if __name__ == "__main__":
     conn = test_hf_connectivity()
     for c in conn["connectivity"]:
         print(f" - {c['name']}: {c['status']} ({c['latency_ms']}ms)")
+

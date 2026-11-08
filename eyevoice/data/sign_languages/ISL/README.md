@@ -12,3 +12,4 @@ To protect local disk space and avoid downloading gigabytes of video to local ha
 
 ## Cloud Execution for Heavy Model Training
 For full batch model retraining on complete 50GB+ video corpora, launch a GitHub Codespace or cloud GPU instance (e.g., via `scripts/train_codespace.sh`) rather than training on local laptop hardware.
+

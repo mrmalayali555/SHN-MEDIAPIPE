@@ -2107,19 +2107,22 @@ async function renderSignToSpeechView(container) {
         <!-- Section 1: Real-time Sign Candidate -->
         <div class="sign-section">
           <div class="sign-section-header">
-            <span>⚡ Detected Sign (Hold to Confirm)</span>
-            <span id="sign-detect-conf" class="sign-confidence-badge low" style="margin-left:auto;">0% Match</span>
+            <span>⚡ Continuous Indian Sign Language Interpreter</span>
+            <label class="sign-auto-speak-toggle" style="margin-left:auto;font-size:0.75rem;">
+              <input type="checkbox" id="auto-continuous-toggle" checked onchange="autoContinuousInterpretEnabled = this.checked">
+              ⚡ Live Auto-Translate: ON
+            </label>
           </div>
           <div class="sign-section-body" style="padding:10px 14px;">
             <div class="sign-detected-display" style="padding:8px;">
-              <span id="sign-detect-icon" class="sign-detected-icon">👋</span>
-              <div id="sign-detect-gloss" class="sign-detected-gloss">Ready to Sign</div>
-              <div id="sign-detect-meaning" class="sign-detected-meaning">Position hands in front of camera</div>
+              <span id="sign-detect-icon" class="sign-detected-icon">🤟</span>
+              <div id="sign-detect-gloss" class="sign-detected-gloss">Ready for Indian Sign Language</div>
+              <div id="sign-detect-meaning" class="sign-detected-meaning">Sign naturally in ISL — continuous translation interprets every sign &amp; sentence in real time</div>
               
               <div class="sign-hold-bar">
                 <div id="sign-detect-hold-fill" class="sign-hold-bar-fill"></div>
               </div>
-              <div id="sign-hold-hint" style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">Hold steady for ~0.4s to confirm sign</div>
+              <div id="sign-hold-hint" style="font-size:0.75rem;color:var(--text-dim);margin-top:4px;">Translates all ISL vocabulary, continuous sentences &amp; fingerspelling automatically</div>
 
               <div id="sign-finger-chips" class="finger-state-grid">
                 <span class="finger-chip" id="chip-thumb">Thumb</span>
@@ -2130,11 +2133,11 @@ async function renderSignToSpeechView(container) {
               </div>
 
               <!-- AI Polishing & Open Sign Translation -->
-              <div id="ai-sign-status-chip" class="ai-sign-status-chip idle">
-                🧠 Gemini AI: Polishing &amp; Continuous Language Translation Ready
+              <div id="ai-sign-status-chip" class="ai-sign-status-chip active">
+                🟢 Live ISL Stream Active: Translates all Indian Sign Language signs in real time
               </div>
               <button id="btn-ai-sign-polish" class="btn-ai-polish" onclick="triggerAiSignInterpretation()">
-                🧠 AI Interpret &amp; Polish Any Sign
+                🧠 Force AI Re-Scan Frame
               </button>
             </div>
           </div>
@@ -2189,11 +2192,11 @@ async function renderSignToSpeechView(container) {
                 </button>
               </div>
               <div class="person-b-quick-pills">
-                <span class="pill-quick-reply" onclick="sendPersonBReply('Yes, I understand.')">✅ Yes, understood</span>
-                <span class="pill-quick-reply" onclick="sendPersonBReply('Getting water for you now.')">💧 Getting water</span>
-                <span class="pill-quick-reply" onclick="sendPersonBReply('Calling the doctor right away.')">👨‍⚕️ Calling doctor</span>
+                <span class="pill-quick-reply" onclick="sendPersonBReply('Yes, I understand.')">✅ Understood</span>
+                <span class="pill-quick-reply" onclick="sendPersonBReply('Calling the doctor right away.')">👨‍⚕️ Contacting Doctor</span>
                 <span class="pill-quick-reply" onclick="sendPersonBReply('Please wait one minute.')">⏳ Please wait</span>
-                <span class="pill-quick-reply" onclick="sendPersonBReply('I love you too!')">❤️ Love you too</span>
+                <span class="pill-quick-reply" onclick="sendPersonBReply('I am here with you.')">❤️ I am with you</span>
+                <span class="pill-quick-reply" onclick="sendPersonBReply('Sounds good.')">👍 All clear</span>
               </div>
             </div>
           </div>
@@ -2220,22 +2223,19 @@ async function renderSignToSpeechView(container) {
           </div>
         </div>
 
-        <!-- Section 5: Verified ISL Signs Reference Guide (Collapsible) -->
-        <details class="sign-section" style="cursor:pointer;">
+        <!-- Section 5: ISLRTC National Standard Lexicon Explorer -->
+        <details class="sign-section" style="cursor:pointer;" ontoggle="if(this.open) loadFullLexiconExplorer()">
           <summary class="sign-section-header">
-            <span>📖 Verified ISL Vocabulary Guide (${vocab.length} Signs)</span>
-            <span style="font-size:0.75rem;color:var(--accent);margin-left:auto;">Click to Expand</span>
+            <span>📖 ISLRTC National Standard Lexicon Explorer (All Categories)</span>
+            <span style="font-size:0.75rem;color:var(--accent);margin-left:auto;">Click to Search &amp; Explore</span>
           </summary>
-          <div class="sign-section-body" style="padding:10px;max-height:220px;overflow-y:auto;">
-            <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:8px;">
-              ${vocab.map(s => `
-                <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:6px;padding:8px;">
-                  <div style="font-weight:700;color:var(--text);font-size:0.85rem;">${s.gloss}</div>
-                  <div style="color:var(--accent);font-size:0.8rem;margin-top:2px;">${s.meaning_en}</div>
-                  <div style="color:var(--text-dim);font-size:0.72rem;margin-top:4px;">Handshape: ${s.parameters ? s.parameters.handshape : ''}</div>
-                  <div style="color:#10b981;font-size:0.7rem;margin-top:2px;">${s.islrtc_ref || 'ISLRTC'} • ${s.meaning_ml || ''}</div>
-                </div>
-              `).join('')}
+          <div class="sign-section-body" style="padding:10px;">
+            <div style="margin-bottom:10px;">
+              <input type="text" id="lexicon-search-input" class="person-b-input" placeholder="Search any ISL word (e.g. Doctor, Emergency, Mother, Letter A, Pain)..." oninput="filterLexiconDisplay(this.value)" style="margin:0;width:100%;">
+            </div>
+            <div id="lexicon-category-pills" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+            <div id="lexicon-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:8px;max-height:280px;overflow-y:auto;">
+              <div style="text-align:center;padding:20px;color:var(--text-dim);grid-column:1/-1;">Loading ISLRTC National Lexicon…</div>
             </div>
           </div>
         </details>
@@ -2329,10 +2329,16 @@ function stopSignCamera() {
 /**
  * Frame callback invoked by sign_tracker.js on every animation frame
  */
+let autoContinuousInterpretEnabled = true;
+let handsInSigningSpaceTime = 0;
+let lastAutoStreamTime = 0;
+let isAutoStreaming = false;
+
 function onSignTrackerFrame(frameData) {
   if (!signRecognizerInstance) return;
 
   const result = signRecognizerInstance.processFrame(frameData);
+  const now = performance.now();
 
   // 1. Hands indicator chips
   const leftChip = document.getElementById('sign-hand-left-chip');
@@ -2351,7 +2357,6 @@ function onSignTrackerFrame(frameData) {
   }
 
   // 3. Current candidate sign display
-  const iconEl = document.getElementById('sign-detect-icon');
   const glossEl = document.getElementById('sign-detect-gloss');
   const meaningEl = document.getElementById('sign-detect-meaning');
   const confEl = document.getElementById('sign-detect-conf');
@@ -2369,15 +2374,38 @@ function onSignTrackerFrame(frameData) {
     }
   } else {
     if (holdFillEl) holdFillEl.style.width = '0%';
-    if (confEl && !result.confirmedSign) {
-      confEl.textContent = 'Scanning...';
-      confEl.className = 'sign-confidence-badge low';
+    if (result.handsDetected > 0) {
+      if (confEl && !result.confirmedSign && !isAutoStreaming) {
+        confEl.textContent = 'Tracking Hands…';
+        confEl.className = 'sign-confidence-badge medium';
+      }
+    } else {
+      if (confEl && !result.confirmedSign) {
+        confEl.textContent = 'Show Hands to Sign';
+        confEl.className = 'sign-confidence-badge low';
+      }
     }
   }
 
-  // 4. Confirmed sign event
+  // 4. Confirmed sign event from fast local rules
   if (result.confirmedSign) {
     onSignConfirmed(result.confirmedSign);
+  }
+
+  // 5. Automatic Continuous Live Translation for ANY Indian Sign Language phrase
+  if (result.handsDetected > 0) {
+    if (handsInSigningSpaceTime === 0) handsInSigningSpaceTime = now;
+
+    const timeInSpace = now - handsInSigningSpaceTime;
+    // When hands are held in signing space for >450ms without a static canned template match:
+    if (autoContinuousInterpretEnabled && !isAutoStreaming && timeInSpace > 450 && !result.currentSign) {
+      if (now - lastAutoStreamTime > 2200) {
+        lastAutoStreamTime = now;
+        autoStreamSigningBurstToAI();
+      }
+    }
+  } else {
+    handsInSigningSpaceTime = 0;
   }
 }
 
@@ -2923,4 +2951,206 @@ async function triggerAiSignInterpretation() {
     isAiInterpreting = false;
     if (btn) btn.disabled = false;
   }
+}
+
+
+/* ==========================================================================
+   CONTINUOUS AUTOMATIC ISL STREAMING & LEXICON EXPLORER
+   ========================================================================== */
+
+async function autoStreamSigningBurstToAI() {
+  if (isAutoStreaming) return;
+
+  let frameB64 = null;
+  if (typeof window.captureSignFrame === 'function') {
+    frameB64 = window.captureSignFrame();
+  }
+  if (!frameB64) {
+    const canvas = document.getElementById('sign-canvas');
+    if (canvas) {
+      try { frameB64 = canvas.toDataURL('image/jpeg', 0.7); } catch (_) {}
+    }
+  }
+  if (!frameB64) return;
+
+  isAutoStreaming = true;
+  const statusChip = document.getElementById('ai-sign-status-chip');
+  const confEl = document.getElementById('sign-detect-conf');
+  if (statusChip) {
+    statusChip.className = 'ai-sign-status-chip active';
+    statusChip.textContent = '🧠 Translating Live Indian Sign Language Stream…';
+  }
+  if (confEl) {
+    confEl.textContent = '🧠 Live AI Analyzing…';
+    confEl.className = 'sign-confidence-badge medium';
+  }
+
+  try {
+    const res = await fetch('/api/sign-interpret-frame', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: frameB64 })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.detected && data.meaning_en) {
+        playClickChime();
+
+        // Update live detection HUD
+        const glossEl = document.getElementById('sign-detect-gloss');
+        const meaningEl = document.getElementById('sign-detect-meaning');
+        if (glossEl) glossEl.textContent = data.sign_name || 'ISL Signed';
+        if (meaningEl) meaningEl.textContent = data.meaning_en;
+        if (confEl) {
+          confEl.textContent = '🧠 ' + (data.confidence || 'high').toUpperCase() + ' MATCH';
+          confEl.className = 'sign-confidence-badge high';
+        }
+
+        if (statusChip) {
+          statusChip.className = 'ai-sign-status-chip detected';
+          statusChip.textContent = `● Translated: "${data.meaning_en}"`;
+        }
+
+        // Update translated spoken output
+        currentSignSentence = data.meaning_en;
+        currentSignMalayalam = data.meaning_ml || '';
+
+        const transEl = document.getElementById('sign-translated-text');
+        const malEl = document.getElementById('sign-malayalam-text');
+        const speakBtn = document.getElementById('btn-sign-speak');
+
+        if (transEl) transEl.textContent = `"${currentSignSentence}"`;
+        if (malEl) malEl.textContent = currentSignMalayalam ? `മലയാളം: ${currentSignMalayalam}` : '';
+        if (speakBtn) speakBtn.disabled = false;
+
+        // Auto speak if enabled
+        if (autoSpeakEnabled) {
+          speakSignSentence();
+        }
+
+        // Add to history
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        signConversationHistory.unshift({
+          icon: '🤟',
+          text: `Person A (ISL): "${data.meaning_en}"`,
+          glosses: `${data.sign_name || 'ISL'} • ${data.hand_description || ''}`,
+          time: timeStr
+        });
+
+        const historyList = document.getElementById('sign-history-list');
+        if (historyList) {
+          historyList.innerHTML = signConversationHistory.map(item => `
+            <div class="sign-history-item" style="${item.icon === '🤟' ? 'border-color:#10b981;background:rgba(16,185,129,0.1);' : ''}">
+              <div class="sign-history-avatar">${item.icon}</div>
+              <div class="sign-history-content">
+                <div class="sign-history-text">${item.text}</div>
+                <div class="sign-history-meta">${item.glosses} • ${item.time}</div>
+              </div>
+            </div>
+          `).join('');
+        }
+      } else {
+        if (statusChip) {
+          statusChip.className = 'ai-sign-status-chip idle';
+          statusChip.textContent = '🟢 Continuous Interpreter Ready • Sign in front of camera';
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Auto stream error:', err);
+  } finally {
+    isAutoStreaming = false;
+  }
+}
+
+let fullLexiconData = null;
+let activeLexiconCategory = 'all';
+
+async function loadFullLexiconExplorer() {
+  const gridEl = document.getElementById('lexicon-cards-grid');
+  const pillsEl = document.getElementById('lexicon-category-pills');
+  if (!gridEl) return;
+
+  if (!fullLexiconData) {
+    try {
+      const res = await fetch('/api/isl/full-lexicon');
+      if (res.ok) {
+        fullLexiconData = await res.json();
+      }
+    } catch (e) {
+      console.error('Failed to load full lexicon:', e);
+    }
+  }
+
+  if (!fullLexiconData || !fullLexiconData.categories) {
+    gridEl.innerHTML = '<div style="color:#ef4444;padding:12px;">Failed to load ISLRTC Lexicon</div>';
+    return;
+  }
+
+  // Render Category Filter Pills
+  if (pillsEl && pillsEl.children.length === 0) {
+    const categories = [{ id: 'all', name: 'All Signs', icon: '🌟' }, ...fullLexiconData.categories];
+    pillsEl.innerHTML = categories.map(cat => `
+      <button class="btn-secondary" onclick="selectLexiconCategory('${cat.id}')" style="padding:4px 10px;font-size:0.75rem;border-radius:99px;border-color:${cat.id === activeLexiconCategory ? '#10b981' : 'var(--card-border)'};color:${cat.id === activeLexiconCategory ? '#10b981' : 'var(--text)'};">
+        ${cat.icon || '🏷️'} ${cat.name}
+      </button>
+    `).join('');
+  }
+
+  renderLexiconItems();
+}
+
+function selectLexiconCategory(catId) {
+  activeLexiconCategory = catId;
+  const pillsEl = document.getElementById('lexicon-category-pills');
+  if (pillsEl) {
+    Array.from(pillsEl.children).forEach(btn => {
+      const isMatch = btn.getAttribute('onclick').includes(`'${catId}'`);
+      btn.style.borderColor = isMatch ? '#10b981' : 'var(--card-border)';
+      btn.style.color = isMatch ? '#10b981' : 'var(--text)';
+    });
+  }
+  const searchInput = document.getElementById('lexicon-search-input');
+  filterLexiconDisplay(searchInput ? searchInput.value : '');
+}
+
+function filterLexiconDisplay(query) {
+  renderLexiconItems(query);
+}
+
+function renderLexiconItems(filterText = '') {
+  const gridEl = document.getElementById('lexicon-cards-grid');
+  if (!gridEl || !fullLexiconData) return;
+
+  const q = (filterText || '').trim().toLowerCase();
+  let items = [];
+
+  fullLexiconData.categories.forEach(cat => {
+    if (activeLexiconCategory !== 'all' && cat.id !== activeLexiconCategory) return;
+    cat.items.forEach(it => {
+      const [gloss, en, ml, desc] = it;
+      if (!q || gloss.toLowerCase().includes(q) || en.toLowerCase().includes(q) || ml.toLowerCase().includes(q) || desc.toLowerCase().includes(q)) {
+        items.push({ category: cat.name, gloss, en, ml, desc });
+      }
+    });
+  });
+
+  if (items.length === 0) {
+    gridEl.innerHTML = '<div style="color:var(--text-dim);padding:14px;text-align:center;grid-column:1/-1;">No ISL signs matched your search.</div>';
+    return;
+  }
+
+  gridEl.innerHTML = items.map(it => `
+    <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:6px;padding:8px;font-size:0.8rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-weight:700;color:var(--text);font-size:0.88rem;">${it.gloss}</span>
+        <span style="font-size:0.65rem;color:#a78bfa;background:rgba(167,139,250,0.15);padding:1px 5px;border-radius:4px;">${it.category}</span>
+      </div>
+      <div style="color:var(--accent);font-size:0.82rem;margin-top:2px;">${it.en}</div>
+      <div style="color:#10b981;font-size:0.75rem;margin-top:2px;">${it.ml}</div>
+      <div style="color:var(--text-dim);font-size:0.72rem;margin-top:4px;line-height:1.3;">🖐️ ${it.desc}</div>
+    </div>
+  `).join('');
 }

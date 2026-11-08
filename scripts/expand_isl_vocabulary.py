@@ -419,3 +419,4 @@ with open(VOCAB_FILE, "w", encoding="utf-8") as f:
     json.dump(existing_data, f, indent=2, ensure_ascii=False)
 
 print(f"Successfully updated {VOCAB_FILE.relative_to(ROOT)} with {len(unified_list)} verified ISL signs (A-Z, 0-9, and Core Vocabulary).")
+
