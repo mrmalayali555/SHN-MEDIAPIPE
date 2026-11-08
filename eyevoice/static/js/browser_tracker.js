@@ -487,8 +487,9 @@ window.isBrowserTrackerRunning = function () { return running; };
 
 // Auto-start on load
 function autoStart() {
-  const mode = document.body.getAttribute('data-gaze') || 'webcam';
-  if (mode === 'webcam') {
+  const chosenMode = sessionStorage.getItem('eyevoice_mode');
+  // ONLY start eye tracker if user explicitly selected Eye-to-Speech mode!
+  if (chosenMode === 'eye_to_speech') {
     initBrowserTracker();
   }
 }

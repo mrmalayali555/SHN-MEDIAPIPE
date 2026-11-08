@@ -1,5 +1,5 @@
-// sign_recognizer.js — Rule-based ISL (Indian Sign Language) Sign Classifier
-// Evaluates MediaPipe Hand, Pose, and Face landmarks against verified linguistic parameters.
+// sign_recognizer.js — Fast, Invariant ISL Sign Recognition Engine
+// Uses 3D Euclidean joint geometry invariant to hand orientation and camera distance.
 // Exposes window.SignRecognizer.
 
 class SignRecognizer {
@@ -11,11 +11,7 @@ class SignRecognizer {
     this.holdProgress = 0;
     this.lastConfirmedSign = null;
     this.cooldownUntil = 0;
-    this.minConfidenceThreshold = 0.55;
-
-    // Movement history buffer for temporal gestures
-    this.historyBuffer = [];
-    this.maxHistoryFrames = 30;
+    this.minConfidenceThreshold = 0.50;
   }
 
   setVocabulary(vocab) {
@@ -24,16 +20,12 @@ class SignRecognizer {
     }
   }
 
-  /**
-   * Main entrypoint: process one frame of vision data
-   */
   processFrame(frameData) {
     const now = frameData.timestamp || performance.now();
     const hands = frameData.hands || [];
     const handedness = frameData.handedness || [];
     const pose = frameData.pose && frameData.pose.length > 0 ? frameData.pose[0] : null;
     const face = frameData.face && frameData.face.length > 0 ? frameData.face[0] : null;
-    const blendshapes = frameData.blendshapes || [];
 
     if (!hands || hands.length === 0) {
       this.currentCandidate = null;
@@ -44,43 +36,39 @@ class SignRecognizer {
         isHolding: false,
         holdProgress: 0,
         confirmedSign: null,
-        fingerStates: { left: null, right: null },
+        fingerStates: { dominant: null, secondary: null },
         handLocation: 'none',
       };
     }
 
-    // 1. Analyze finger states for all detected hands
+    // 1. Analyze 3D finger states for each hand
     const analyzedHands = [];
     for (let i = 0; i < hands.length; i++) {
       const lm = hands[i];
       const hLabel = (handedness[i] && handedness[i][0]) ? handedness[i][0].categoryName : (i === 0 ? 'Right' : 'Left');
-      const fingerState = this._detectFingerStates(lm, hLabel);
-      const handCenter = lm[0]; // wrist as base anchor
+      const fingers = this._detectFingerStates3D(lm);
       analyzedHands.push({
         landmarks: lm,
         label: hLabel,
-        fingers: fingerState,
-        wrist: handCenter,
+        fingers: fingers,
+        wrist: lm[0],
         indexTip: lm[8],
         thumbTip: lm[4],
       });
     }
 
-    // 2. Determine hand location relative to body anchors (Face & Pose)
+    // 2. Body anchor location
     const handLocation = this._detectHandLocation(analyzedHands[0], pose, face);
 
-    // 3. Check two-hand interaction (distance, contact, cross)
-    const twoHandRel = this._analyzeTwoHandRelation(analyzedHands);
+    // 3. Two-hand relation
+    const twoHand = this._analyzeTwoHand(analyzedHands);
 
-    // 4. Non-manual facial markers (eyebrow raise, furrow, mouth opening)
-    const nonManual = this._extractNonManualMarkers(face, blendshapes);
-
-    // 5. Match candidate sign against vocabulary
+    // 4. Candidate matching
     let bestMatch = null;
     let highestScore = 0;
 
     for (const sign of this.vocabulary) {
-      const score = this._scoreSignMatch(sign, analyzedHands, handLocation, twoHandRel, nonManual);
+      const score = this._scoreSignMatch(sign, analyzedHands, handLocation, twoHand);
       if (score > highestScore && score >= this.minConfidenceThreshold) {
         highestScore = score;
         bestMatch = {
@@ -89,12 +77,12 @@ class SignRecognizer {
           meaning_en: sign.meaning_en,
           meaning_ml: sign.meaning_ml || '',
           confidence: Math.round(score * 100),
-          min_hold_ms: (sign.recognition_spec && sign.recognition_spec.min_hold_ms) || 450,
+          min_hold_ms: (sign.recognition_spec && sign.recognition_spec.min_hold_ms) || 350,
         };
       }
     }
 
-    // 6. Temporal hold logic & confirmation
+    // 5. Temporal stability hold
     let confirmed = null;
     const isCooldown = now < this.cooldownUntil;
 
@@ -105,7 +93,7 @@ class SignRecognizer {
         this.holdProgress = 0;
       } else {
         const elapsed = now - this.candidateStartTime;
-        const requiredHold = bestMatch.min_hold_ms || 450;
+        const requiredHold = bestMatch.min_hold_ms || 350;
         this.holdProgress = Math.min(1.0, elapsed / requiredHold);
 
         if (this.holdProgress >= 1.0) {
@@ -121,7 +109,7 @@ class SignRecognizer {
           this.lastConfirmedSign = confirmed;
           this.currentCandidate = null;
           this.holdProgress = 0;
-          this.cooldownUntil = now + 900; // 900ms cooldown after confirmation
+          this.cooldownUntil = now + 800; // 800ms cooldown after confirmation
         }
       }
     } else {
@@ -146,241 +134,211 @@ class SignRecognizer {
   }
 
   /**
-   * Detect finger extension / flexion using joint angles and Euclidean distances
+   * Orientation-independent 3D Euclidean distance finger state classifier
    */
-  _detectFingerStates(lm, handLabel) {
+  _detectFingerStates3D(lm) {
     if (!lm || lm.length < 21) {
       return { thumb: 'folded', index: 'folded', middle: 'folded', ring: 'folded', pinky: 'folded' };
     }
 
+    const dist3D = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, (a.z || 0) - (b.z || 0));
+
+    // Wrist
     const wrist = lm[0];
 
-    // Distance helper
-    const dist = (p1, p2) => Math.hypot(p1.x - p2.x, p1.y - p2.y, (p1.z || 0) - (p2.z || 0));
+    // Helper for non-thumb fingers (MCP, PIP, TIP)
+    const isFingerExtended = (mcpIdx, pipIdx, tipIdx) => {
+      const mcp = lm[mcpIdx];
+      const pip = lm[pipIdx];
+      const tip = lm[tipIdx];
+      const dTipMcp = dist3D(tip, mcp);
+      const dPipMcp = dist3D(pip, mcp);
+      const dTipWrist = dist3D(tip, wrist);
+      const dPipWrist = dist3D(pip, wrist);
 
-    // Index (5: MCP, 6: PIP, 7: DIP, 8: TIP)
-    const indexExtended = (lm[8].y < lm[6].y) && (dist(lm[8], wrist) > dist(lm[6], wrist) * 1.15);
+      // In any orientation, when extended, fingertip is significantly further from knuckle than PIP joint
+      return (dTipMcp > dPipMcp * 1.30) || (dTipWrist > dPipWrist * 1.15);
+    };
 
-    // Middle (9: MCP, 10: PIP, 11: DIP, 12: TIP)
-    const middleExtended = (lm[12].y < lm[10].y) && (dist(lm[12], wrist) > dist(lm[10], wrist) * 1.15);
+    const indexExt  = isFingerExtended(5, 6, 8);
+    const middleExt = isFingerExtended(9, 10, 12);
+    const ringExt   = isFingerExtended(13, 14, 16);
+    const pinkyExt  = isFingerExtended(17, 18, 20);
 
-    // Ring (13: MCP, 14: PIP, 15: DIP, 16: TIP)
-    const ringExtended = (lm[16].y < lm[14].y) && (dist(lm[16], wrist) > dist(lm[14], wrist) * 1.15);
+    // Thumb: Compare tip (4) to IP (3) and Index MCP (5)
+    const thumbTip = lm[4];
+    const thumbIP = lm[3];
+    const thumbMCP = lm[2];
+    const indexMCP = lm[5];
+    const pinkyMCP = lm[17];
 
-    // Pinky (17: MCP, 18: PIP, 19: DIP, 20: TIP)
-    const pinkyExtended = (lm[20].y < lm[18].y) && (dist(lm[20], wrist) > dist(lm[18], wrist) * 1.15);
+    const dThumbIndex = dist3D(thumbTip, indexMCP);
+    const dThumbPinky = dist3D(thumbTip, pinkyMCP);
+    const dIPIndex = dist3D(thumbIP, indexMCP);
 
-    // Thumb: Compare tip (4) to IP (3) and pinky MCP (17)
-    // Thumb is extended if its tip is spread away from palm center / pinky base
-    const thumbSpread = dist(lm[4], lm[17]);
-    const thumbBase = dist(lm[2], lm[17]);
-    const thumbExtended = (thumbSpread > thumbBase * 1.25) || (Math.abs(lm[4].x - lm[2].x) > 0.08);
+    const thumbExt = (dThumbIndex > dIPIndex * 1.2) || (dThumbPinky > dist3D(thumbMCP, pinkyMCP) * 1.25);
 
     return {
-      thumb: thumbExtended ? 'extended' : 'folded',
-      index: indexExtended ? 'extended' : 'folded',
-      middle: middleExtended ? 'extended' : 'folded',
-      ring: ringExtended ? 'extended' : 'folded',
-      pinky: pinkyExtended ? 'extended' : 'folded',
+      thumb:  thumbExt  ? 'extended' : 'folded',
+      index:  indexExt  ? 'extended' : 'folded',
+      middle: middleExt ? 'extended' : 'folded',
+      ring:   ringExt   ? 'extended' : 'folded',
+      pinky:  pinkyExt  ? 'extended' : 'folded',
     };
   }
 
-  /**
-   * Determine hand location in body space using Face and Pose reference anchors
-   */
   _detectHandLocation(primaryHand, pose, face) {
     if (!primaryHand) return 'unknown';
 
     const handY = primaryHand.indexTip.y;
     const handX = primaryHand.indexTip.x;
 
-    if (face) {
+    if (face && face.length > 152) {
       const mouthY = face[13] ? face[13].y : 0.4;
-      const noseY = face[1] ? face[1].y : 0.35;
-      const chinY = face[152] ? face[152].y : 0.45;
-      const cheekX_L = face[234] ? face[234].x : 0.4;
-      const cheekX_R = face[454] ? face[454].x : 0.6;
+      const mouthX = face[13] ? face[13].x : 0.5;
 
-      // Close to mouth / lips (within 0.12 radius)
-      if (Math.hypot(handX - (face[13]?.x || 0.5), handY - mouthY) < 0.12) {
+      // Close to mouth
+      if (Math.hypot(handX - mouthX, handY - mouthY) < 0.16) {
         return 'mouth_chin';
       }
 
-      // Close to cheek or side of head
-      if (Math.abs(handY - noseY) < 0.15 && (Math.abs(handX - cheekX_L) < 0.12 || Math.abs(handX - cheekX_R) < 0.12)) {
-        return 'cheek_temple';
-      }
-
-      // Above mouth level near face
-      if (handY <= chinY + 0.05 && handY >= noseY - 0.15) {
+      if (handY < mouthY + 0.08) {
         return 'face';
       }
     }
 
-    if (pose) {
-      const leftShoulder = pose[11];
-      const rightShoulder = pose[12];
-      if (leftShoulder && rightShoulder) {
-        const shoulderMidY = (leftShoulder.y + rightShoulder.y) / 2;
-        if (handY >= shoulderMidY - 0.1 && handY <= shoulderMidY + 0.3) {
-          return 'chest';
-        }
+    if (pose && pose.length > 12) {
+      const shoulderMidY = ((pose[11]?.y || 0.5) + (pose[12]?.y || 0.5)) / 2;
+      if (handY >= shoulderMidY - 0.15 && handY <= shoulderMidY + 0.35) {
+        return 'chest';
       }
     }
 
-    // Default height-based fallback if pose/face landmarks absent
-    if (handY < 0.35) return 'face';
-    if (handY < 0.70) return 'chest';
+    // Height based fallback
+    if (handY < 0.38) return 'face';
+    if (handY < 0.72) return 'chest';
     return 'neutral';
   }
 
-  /**
-   * Two-hand relation metrics (wrist-to-wrist distance, contact)
-   */
-  _analyzeTwoHandRelation(analyzedHands) {
+  _analyzeTwoHand(analyzedHands) {
     if (analyzedHands.length < 2) {
       return { isTwoHanded: false, wristDistance: 999, isContact: false };
     }
     const h1 = analyzedHands[0];
     const h2 = analyzedHands[1];
-    const dx = h1.wrist.x - h2.wrist.x;
-    const dy = h1.wrist.y - h2.wrist.y;
-    const dist = Math.hypot(dx, dy);
-
+    const dist = Math.hypot(h1.wrist.x - h2.wrist.x, h1.wrist.y - h2.wrist.y);
     return {
       isTwoHanded: true,
       wristDistance: dist,
-      isContact: dist < 0.18,
+      isContact: dist < 0.22,
     };
   }
 
-  /**
-   * Extract non-manual facial markers from Face Landmarker blendshapes & points
-   */
-  _extractNonManualMarkers(face, blendshapes) {
-    const result = {
-      eyebrowRaised: false,
-      eyebrowFurrowed: false,
-      smile: false,
-    };
-
-    if (!face || face.length < 468) return result;
-
-    // Direct geometric eyebrow elevation check
-    // Landmark 70 = Left Eyebrow inner, 159 = Left Eye top
-    // Landmark 300 = Right Eyebrow inner, 386 = Right Eye top
-    const leftBrowElev = (face[159]?.y || 0) - (face[70]?.y || 0);
-    const rightBrowElev = (face[386]?.y || 0) - (face[300]?.y || 0);
-    if (leftBrowElev > 0.055 || rightBrowElev > 0.055) {
-      result.eyebrowRaised = true;
-    }
-
-    // Mouth corners elevation for smile (Landmarks 61: Left mouth corner, 291: Right mouth corner, 0: Lip top)
-    const mouthWidth = Math.hypot((face[291]?.x || 0) - (face[61]?.x || 0), (face[291]?.y || 0) - (face[61]?.y || 0));
-    if (mouthWidth > 0.16) {
-      result.smile = true;
-    }
-
-    return result;
-  }
-
-  /**
-   * Score a vocabulary sign against current visual frame features
-   */
-  _scoreSignMatch(sign, analyzedHands, handLocation, twoHandRel, nonManual) {
+  _scoreSignMatch(sign, analyzedHands, handLocation, twoHand) {
     const spec = sign.recognition_spec;
     if (!spec) return 0;
 
-    let score = 0;
-    const dominantHand = analyzedHands[0];
-    if (!dominantHand) return 0;
+    const dominant = analyzedHands[0];
+    if (!dominant) return 0;
 
-    // 1. Hand Count Check
-    const requiredHands = spec.hands_required || 1;
-    if (requiredHands === 2) {
-      if (analyzedHands.length >= 2) {
-        score += 0.20;
-      } else {
-        score -= 0.15; // penalty if sign needs 2 hands but only 1 present
-      }
-    } else {
-      score += 0.20; // 1 hand required and at least 1 present
-    }
+    const f = dominant.fingers;
+    const signId = sign.id;
 
-    // 2. Dominant Hand Finger State Matching (0.50 max)
-    const targetFingers = (requiredHands === 2 && spec.finger_states && spec.finger_states.dominant)
-      ? spec.finger_states.dominant
-      : (spec.finger_states || {});
-
-    const detectedFingers = dominantHand.fingers;
-    const fingerKeys = ['thumb', 'index', 'middle', 'ring', 'pinky'];
-    let matchingFingers = 0;
-
-    for (const key of fingerKeys) {
-      const target = targetFingers[key];
-      if (!target || target === 'either') {
-        matchingFingers++;
-      } else if (target === detectedFingers[key]) {
-        matchingFingers++;
+    // Direct High-Accuracy Gesture Templates
+    if (signId === 'I_LOVE_YOU') {
+      // Thumb extended, Index extended, Pinky extended, Middle & Ring folded
+      if (f.thumb === 'extended' && f.index === 'extended' && f.pinky === 'extended' &&
+          f.middle === 'folded' && f.ring === 'folded') {
+        return 0.95;
       }
-    }
-    score += (matchingFingers / 5) * 0.50;
-
-    // 3. Location Matching (0.20 max)
-    const targetLoc = spec.relative_location;
-    if (targetLoc) {
-      if (targetLoc === 'chest_or_face') {
-        if (handLocation === 'chest' || handLocation === 'face' || handLocation === 'mouth_chin') score += 0.20;
-      } else if (targetLoc === 'mouth_chin' || targetLoc === 'mouth') {
-        if (handLocation === 'mouth_chin' || handLocation === 'face') score += 0.20;
-        else score -= 0.10;
-      } else if (targetLoc === 'chest' || targetLoc === 'chest_center' || targetLoc === 'chest_forward') {
-        if (handLocation === 'chest' || handLocation === 'neutral') score += 0.20;
-      } else if (targetLoc === 'cheek_temple') {
-        if (handLocation === 'cheek_temple' || handLocation === 'face') score += 0.20;
-      } else if (targetLoc === 'wrist_contact') {
-        if (twoHandRel.isContact || twoHandRel.wristDistance < 0.22) score += 0.20;
-      } else {
-        score += 0.10; // neutral match
-      }
-    } else {
-      score += 0.15;
-    }
-
-    // 4. Special Sign Signature Rules (0.10 bonus)
-    if (sign.id === 'I_LOVE_YOU') {
-      // Thumb extended, Index extended, Pinky extended, Middle folded, Ring folded
-      if (detectedFingers.thumb === 'extended' && detectedFingers.index === 'extended' &&
-          detectedFingers.pinky === 'extended' && detectedFingers.middle === 'folded' &&
-          detectedFingers.ring === 'folded') {
-        score += 0.15;
-      }
-    } else if (sign.id === 'YES') {
-      // Thumbs up: Thumb extended, all others folded
-      if (detectedFingers.thumb === 'extended' && detectedFingers.index === 'folded' &&
-          detectedFingers.middle === 'folded' && detectedFingers.ring === 'folded' &&
-          detectedFingers.pinky === 'folded') {
-        score += 0.15;
-      }
-    } else if (sign.id === 'PRO-1' || sign.id === 'PRO-2') {
-      // Index only extended
-      if (detectedFingers.index === 'extended' && detectedFingers.middle === 'folded' &&
-          detectedFingers.ring === 'folded' && detectedFingers.pinky === 'folded') {
-        score += 0.12;
-      }
-    } else if (sign.id === 'NAMASTE') {
-      // Open hand at chest/face with smile
-      if (matchingFingers >= 4) {
-        score += 0.10;
-      }
-    } else if (sign.id === 'WATER' || sign.id === 'FOOD') {
-      // Hand near mouth
-      if (handLocation === 'mouth_chin' || handLocation === 'face') {
-        score += 0.10;
+      if (f.index === 'extended' && f.pinky === 'extended' && f.middle === 'folded' && f.ring === 'folded') {
+        return 0.85;
       }
     }
 
-    return Math.min(1.0, Math.max(0.0, score));
+    if (signId === 'YES') {
+      // Thumbs-up: Thumb extended, all other 4 folded
+      if (f.thumb === 'extended' && f.index === 'folded' && f.middle === 'folded' &&
+          f.ring === 'folded' && f.pinky === 'folded') {
+        return 0.95;
+      }
+    }
+
+    if (signId === 'NO') {
+      // Index & Middle extended (V/Peace shape or scissor snap)
+      if (f.index === 'extended' && f.middle === 'extended' && f.ring === 'folded' && f.pinky === 'folded') {
+        return 0.92;
+      }
+    }
+
+    if (signId === 'WATER') {
+      // 3 fingers (W-hand: index, middle, ring extended) near mouth/chin
+      const isWHand = (f.index === 'extended' && f.middle === 'extended' && f.ring === 'extended');
+      if (isWHand && (handLocation === 'mouth_chin' || handLocation === 'face')) {
+        return 0.95;
+      }
+      if (isWHand) {
+        return 0.82;
+      }
+    }
+
+    if (signId === 'FOOD') {
+      // Fingertips near mouth
+      if (handLocation === 'mouth_chin' && (f.index === 'folded' || f.middle === 'folded')) {
+        return 0.88;
+      }
+    }
+
+    if (signId === 'NAMASTE') {
+      // Open hand (all 5 fingers extended) at chest or face
+      const openCount = [f.thumb, f.index, f.middle, f.ring, f.pinky].filter(x => x === 'extended').length;
+      if (openCount >= 4 && (handLocation === 'chest' || handLocation === 'face')) {
+        return 0.92;
+      }
+      if (openCount >= 4) {
+        return 0.80;
+      }
+    }
+
+    if (signId === 'STOP') {
+      // Open flat hand facing forward
+      const openCount = [f.index, f.middle, f.ring, f.pinky].filter(x => x === 'extended').length;
+      if (openCount >= 4 && handLocation === 'chest') {
+        return 0.88;
+      }
+    }
+
+    if (signId === 'PRO-1') {
+      // Single index finger pointing
+      if (f.index === 'extended' && f.middle === 'folded' && f.ring === 'folded' && f.pinky === 'folded') {
+        if (handLocation === 'chest') return 0.92;
+        return 0.80;
+      }
+    }
+
+    if (signId === 'DOCTOR') {
+      // Two hands close together (tapping wrist)
+      if (twoHand.isContact || twoHand.wristDistance < 0.20) {
+        return 0.88;
+      }
+    }
+
+    if (signId === 'HELP') {
+      // Two hands close together in front of chest
+      if (twoHand.isTwoHanded && twoHand.wristDistance < 0.25) {
+        return 0.85;
+      }
+    }
+
+    if (signId === 'PLEASE') {
+      // Open hand on chest
+      const openCount = [f.index, f.middle, f.ring, f.pinky].filter(x => x === 'extended').length;
+      if (openCount >= 4 && handLocation === 'chest') {
+        return 0.80;
+      }
+    }
+
+    return 0.0;
   }
 
   getSignSequence() {
@@ -399,5 +357,4 @@ class SignRecognizer {
   }
 }
 
-// Expose on window
 window.SignRecognizer = SignRecognizer;

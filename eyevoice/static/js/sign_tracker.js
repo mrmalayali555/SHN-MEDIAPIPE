@@ -1,4 +1,4 @@
-// sign_tracker.js — Client-side MediaPipe Hand+Pose+Face tracking for sign language recognition
+// sign_tracker.js — Resilient MediaPipe Hand+Pose Tracking for Sign Language
 // Loaded as <script type="module">. Exposes window.initSignTracker, window.stopSignTracker, window.isSignTrackerRunning.
 
 const MP_VISION_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/vision_bundle.mjs';
@@ -7,145 +7,194 @@ const HAND_MODEL    = 'https://storage.googleapis.com/mediapipe-models/hand_land
 const POSE_MODEL    = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task';
 const FACE_MODEL    = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task';
 
-// ── Internal state ──────────────────────────────────────────────────────────────
-let handLandmarker  = null;
-let poseLandmarker  = null;
-let faceLandmarker  = null;
-let drawingUtils    = null;
-let HAND_CONNECTIONS_REF = null;
+// Hand landmark connection pairs
+const HAND_CONNECTIONS = [
+  // Thumb
+  [0, 1], [1, 2], [2, 3], [3, 4],
+  // Index
+  [0, 5], [5, 6], [6, 7], [7, 8],
+  // Middle
+  [5, 9], [9, 10], [10, 11], [11, 12],
+  // Ring
+  [9, 13], [13, 14], [14, 15], [15, 16],
+  // Pinky
+  [13, 17], [0, 17], [17, 18], [18, 19], [19, 20]
+];
 
-let animFrameId     = null;
-let running         = false;
-let stream          = null;
+// Upper body connections
+const POSE_CONNECTIONS = [
+  [11, 12], [11, 13], [12, 14], [13, 15], [14, 16]
+];
 
-let lastFrameTime   = 0;
-let fpsValues       = [];
-let currentFps      = 0;
+// Internal state
+let handLandmarker = null;
+let poseLandmarker = null;
+let faceLandmarker = null;
 
-// ── Helper: emit status ─────────────────────────────────────────────────────────
+let animFrameId   = null;
+let running       = false;
+let cameraStream  = null;
+
+let lastFrameTime = 0;
+let lastVideoTimestamp = 0;
+let fpsValues     = [];
+let currentFps    = 0;
+
 function emitStatus(msg) {
   if (typeof window.onSignTrackerStatus === 'function') {
     window.onSignTrackerStatus(msg);
   }
 }
 
-// ── Load SDK & models ───────────────────────────────────────────────────────────
+/**
+ * Load MediaPipe models with automatic GPU -> CPU fallback
+ */
 async function loadModels() {
-  emitStatus('Loading MediaPipe SDK…');
+  emitStatus('Loading MediaPipe Vision SDK…');
   const vision = await import(MP_VISION_CDN);
-  const { HandLandmarker, PoseLandmarker, FaceLandmarker, FilesetResolver, DrawingUtils } = vision;
+  const { HandLandmarker, PoseLandmarker, FaceLandmarker, FilesetResolver } = vision;
 
-  HAND_CONNECTIONS_REF = HandLandmarker.HAND_CONNECTIONS;
-
-  emitStatus('Loading WASM fileset…');
+  emitStatus('Loading WASM runtime…');
   const fileset = await FilesetResolver.forVisionTasks(MP_WASM_PATH);
 
-  // Load each model independently — if one fails the others still work
+  // 1. Load HandLandmarker (Core Priority)
+  emitStatus('Loading Hand Detector…');
   try {
-    emitStatus('Loading Hand model…');
+    // Try GPU first
     handLandmarker = await HandLandmarker.createFromOptions(fileset, {
       baseOptions: { modelAssetPath: HAND_MODEL, delegate: 'GPU' },
       runningMode: 'VIDEO',
       numHands: 2,
-      minHandDetectionConfidence: 0.6,
-      minHandPresenceConfidence: 0.6,
-      minTrackingConfidence: 0.5,
+      minHandDetectionConfidence: 0.35,
+      minHandPresenceConfidence: 0.35,
+      minTrackingConfidence: 0.35,
     });
-  } catch (err) {
-    console.error('Hand model failed to load:', err);
-    emitStatus('⚠ Hand model failed to load');
-    handLandmarker = null;
+    console.log('HandLandmarker initialized with GPU delegate');
+  } catch (gpuErr) {
+    console.warn('HandLandmarker GPU delegate failed, falling back to CPU:', gpuErr);
+    try {
+      handLandmarker = await HandLandmarker.createFromOptions(fileset, {
+        baseOptions: { modelAssetPath: HAND_MODEL, delegate: 'CPU' },
+        runningMode: 'VIDEO',
+        numHands: 2,
+        minHandDetectionConfidence: 0.35,
+        minHandPresenceConfidence: 0.35,
+        minTrackingConfidence: 0.35,
+      });
+      console.log('HandLandmarker initialized with CPU delegate');
+    } catch (cpuErr) {
+      console.error('HandLandmarker failed on CPU too:', cpuErr);
+      throw cpuErr;
+    }
   }
 
+  // 2. Load PoseLandmarker (Optional enhancement)
   try {
-    emitStatus('Loading Pose model…');
     poseLandmarker = await PoseLandmarker.createFromOptions(fileset, {
-      baseOptions: { modelAssetPath: POSE_MODEL, delegate: 'GPU' },
+      baseOptions: { modelAssetPath: POSE_MODEL, delegate: 'CPU' },
       runningMode: 'VIDEO',
     });
-  } catch (err) {
-    console.error('Pose model failed to load:', err);
-    emitStatus('⚠ Pose model failed to load');
+  } catch (e) {
+    console.warn('Pose Landmarker optional load failed:', e);
     poseLandmarker = null;
   }
 
+  // 3. Load FaceLandmarker (Optional enhancement)
   try {
-    emitStatus('Loading Face model…');
     faceLandmarker = await FaceLandmarker.createFromOptions(fileset, {
-      baseOptions: { modelAssetPath: FACE_MODEL, delegate: 'GPU' },
+      baseOptions: { modelAssetPath: FACE_MODEL, delegate: 'CPU' },
       runningMode: 'VIDEO',
       numFaces: 1,
-      outputFaceBlendshapes: true,
     });
-  } catch (err) {
-    console.error('Face model failed to load:', err);
-    emitStatus('⚠ Face model failed to load');
+  } catch (e) {
+    console.warn('Face Landmarker optional load failed:', e);
     faceLandmarker = null;
   }
-
-  // DrawingUtils needs a canvas context — we'll create it later per-frame,
-  // but store the constructor ref so we can instantiate it once we have the ctx.
-  return DrawingUtils;
 }
 
-// ── Drawing helpers ─────────────────────────────────────────────────────────────
-
-function drawHandLandmarks(ctx, hands, handednesses, width, height) {
+/**
+ * Draw vivid neon landmarks for hands
+ */
+function drawHandSkeleton(ctx, hands, handednesses, width, height) {
   if (!hands || hands.length === 0) return;
 
   for (let i = 0; i < hands.length; i++) {
-    const landmarks = hands[i];
-    const label = handednesses && handednesses[i] && handednesses[i][0]
+    const lm = hands[i];
+    const rawLabel = (handednesses && handednesses[i] && handednesses[i][0])
       ? handednesses[i][0].categoryName
-      : 'Unknown';
+      : 'Hand';
 
-    // MediaPipe reports handedness from the camera's POV, so
-    // "Left" in result = user's left hand. We colour accordingly.
-    const color = label === 'Left' ? '#22c55e' : '#3b82f6';
+    // In mirrored canvas: MediaPipe "Left" appears on the viewer's right
+    const isLeft = rawLabel === 'Left';
+    const mainColor = isLeft ? '#10b981' : '#3b82f6'; // Emerald green vs Sky blue
+    const glowColor = isLeft ? 'rgba(16, 185, 129, 0.4)' : 'rgba(59, 130, 246, 0.4)';
 
-    // Draw connections
-    if (HAND_CONNECTIONS_REF) {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      for (const conn of HAND_CONNECTIONS_REF) {
-        const a = landmarks[conn.start];
-        const b = landmarks[conn.end];
-        if (!a || !b) continue;
-        ctx.beginPath();
-        ctx.moveTo(a.x * width, a.y * height);
-        ctx.lineTo(b.x * width, b.y * height);
-        ctx.stroke();
-      }
+    // 1. Draw connecting bone lines
+    ctx.save();
+    ctx.strokeStyle = mainColor;
+    ctx.lineWidth = 3.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = mainColor;
+    ctx.shadowBlur = 8;
+
+    for (const [s, e] of HAND_CONNECTIONS) {
+      const p1 = lm[s];
+      const p2 = lm[e];
+      if (!p1 || !p2) continue;
+      ctx.beginPath();
+      ctx.moveTo(p1.x * width, p1.y * height);
+      ctx.lineTo(p2.x * width, p2.y * height);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // 2. Draw joints & fingertip rings
+    for (let j = 0; j < lm.length; j++) {
+      const pt = lm[j];
+      const isTip = [4, 8, 12, 16, 20].includes(j);
+      const radius = isTip ? 6 : 4;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(pt.x * width, pt.y * height, radius, 0, 2 * Math.PI);
+      ctx.fillStyle = isTip ? '#ffffff' : mainColor;
+      ctx.shadowColor = glowColor;
+      ctx.shadowBlur = isTip ? 10 : 5;
+      ctx.fill();
+      ctx.strokeStyle = mainColor;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
     }
 
-    // Draw dots
-    ctx.fillStyle = color;
-    for (const lm of landmarks) {
-      ctx.beginPath();
-      ctx.arc(lm.x * width, lm.y * height, 3, 0, 2 * Math.PI);
-      ctx.fill();
+    // 3. Hand label near wrist
+    const wrist = lm[0];
+    if (wrist) {
+      ctx.save();
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'black';
+      ctx.shadowBlur = 4;
+      ctx.fillText(`${rawLabel} Hand`, wrist.x * width - 25, Math.min(height - 10, wrist.y * height + 24));
+      ctx.restore();
     }
   }
 }
 
+/**
+ * Draw upper-body pose landmarks (shoulders, elbows, wrists)
+ */
 function drawUpperBodyPose(ctx, poses, width, height) {
   if (!poses || poses.length === 0) return;
-  const lm = poses[0]; // first person
+  const lm = poses[0];
   if (!lm) return;
 
-  // Upper-body connections: shoulders(11-12), shoulder→elbow(11-13, 12-14), elbow→wrist(13-15, 14-16)
-  const connections = [
-    [11, 12],
-    [11, 13],
-    [12, 14],
-    [13, 15],
-    [14, 16],
-  ];
+  ctx.save();
+  ctx.strokeStyle = 'rgba(234, 179, 8, 0.7)'; // Amber
+  ctx.lineWidth = 2.5;
 
-  ctx.strokeStyle = '#eab308';
-  ctx.lineWidth = 3;
-
-  for (const [aIdx, bIdx] of connections) {
+  for (const [aIdx, bIdx] of POSE_CONNECTIONS) {
     const a = lm[aIdx];
     const b = lm[bIdx];
     if (!a || !b) continue;
@@ -155,7 +204,6 @@ function drawUpperBodyPose(ctx, poses, width, height) {
     ctx.stroke();
   }
 
-  // Draw dots on the upper-body keypoints
   ctx.fillStyle = '#eab308';
   for (const idx of [11, 12, 13, 14, 15, 16]) {
     const pt = lm[idx];
@@ -164,140 +212,182 @@ function drawUpperBodyPose(ctx, poses, width, height) {
     ctx.arc(pt.x * width, pt.y * height, 4, 0, 2 * Math.PI);
     ctx.fill();
   }
+  ctx.restore();
 }
 
-function drawFps(ctx, fps) {
-  const text = `${Math.round(fps)} FPS`;
-  ctx.font = '16px monospace';
-  ctx.shadowColor = 'black';
-  ctx.shadowBlur = 4;
-  ctx.shadowOffsetX = 1;
-  ctx.shadowOffsetY = 1;
-  ctx.fillStyle = 'white';
-  ctx.fillText(text, 10, 22);
-  // Reset shadow
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 0;
-}
-
-// ── FPS tracking ────────────────────────────────────────────────────────────────
-function updateFps(now) {
-  if (lastFrameTime > 0) {
-    const delta = now - lastFrameTime;
-    if (delta > 0) {
-      fpsValues.push(1000 / delta);
-      if (fpsValues.length > 30) fpsValues.shift();
-      currentFps = fpsValues.reduce((a, b) => a + b, 0) / fpsValues.length;
-    }
-  }
-  lastFrameTime = now;
-}
-
-// ── Main init ───────────────────────────────────────────────────────────────────
+/**
+ * Main Camera & Tracker Initializer
+ */
 window.initSignTracker = async function initSignTracker(videoEl, canvasEl, onFrameCallback) {
   if (running) {
     emitStatus('Tracker already running');
     return;
   }
 
-  let DrawingUtilsClass;
-  try {
-    DrawingUtilsClass = await loadModels();
-    emitStatus('Models loaded ✓');
-  } catch (err) {
-    console.error('Failed to load MediaPipe SDK:', err);
-    emitStatus('❌ Failed to load MediaPipe SDK: ' + err.message);
-    return;
+  // 1. Release any existing camera streams to avoid device conflicts
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  if (window.stopBrowserTracker) {
+    try { window.stopBrowserTracker(); } catch (_) {}
   }
 
-  // Start camera
+  // 2. Load models if not already loaded
+  if (!handLandmarker) {
+    try {
+      await loadModels();
+      emitStatus('MediaPipe Vision Ready ✓');
+    } catch (err) {
+      console.error('Failed to load MediaPipe models:', err);
+      emitStatus('❌ MediaPipe load error: ' + err.message);
+      return;
+    }
+  }
+
+  // 3. Request webcam stream
   try {
-    emitStatus('Requesting camera…');
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: 640, height: 480, facingMode: 'user' },
+    emitStatus('Opening webcam…');
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        facingMode: 'user',
+      },
+      audio: false,
     });
-    videoEl.srcObject = stream;
+    videoEl.srcObject = cameraStream;
     videoEl.setAttribute('playsinline', '');
+    videoEl.muted = true;
     await videoEl.play();
+
+    // Wait for real video dimensions
+    if (!videoEl.videoWidth) {
+      await new Promise(resolve => {
+        videoEl.onloadedmetadata = () => resolve();
+        setTimeout(resolve, 500); // timeout fallback
+      });
+    }
   } catch (err) {
-    console.error('Camera access denied:', err);
-    emitStatus('❌ Camera access denied: ' + err.message);
-    return;
+    console.error('Webcam access error:', err);
+    emitStatus('❌ Webcam blocked or unavailable: ' + err.message);
+    throw err;
   }
 
-  // Set up canvas
+  // 4. Configure canvas
   const ctx = canvasEl.getContext('2d');
   canvasEl.width = videoEl.videoWidth || 640;
   canvasEl.height = videoEl.videoHeight || 480;
 
   running = true;
   lastFrameTime = 0;
+  lastVideoTimestamp = 0;
   fpsValues = [];
   currentFps = 0;
 
-  emitStatus('Tracking started');
+  emitStatus('Tracking Active');
 
-  // ── Frame loop ──────────────────────────────────────────────────────────────
+  // 5. Main Animation Frame Loop
   function processFrame() {
     if (!running) return;
 
-    const now = performance.now();
-    updateFps(now);
+    let now = performance.now();
+    // Guarantee strictly increasing timestamp for MediaPipe
+    if (now <= lastVideoTimestamp) {
+      now = lastVideoTimestamp + 1;
+    }
+    lastVideoTimestamp = now;
+
+    // Calculate FPS
+    if (lastFrameTime > 0) {
+      const delta = now - lastFrameTime;
+      if (delta > 0) {
+        fpsValues.push(1000 / delta);
+        if (fpsValues.length > 20) fpsValues.shift();
+        currentFps = fpsValues.reduce((a, b) => a + b, 0) / fpsValues.length;
+      }
+    }
+    lastFrameTime = now;
 
     const width = canvasEl.width;
     const height = canvasEl.height;
 
-    // Detect
+    // Inference results
     let handResult = { landmarks: [], handednesses: [], worldLandmarks: [] };
     let poseResult = { landmarks: [], worldLandmarks: [] };
     let faceResult = { faceLandmarks: [], faceBlendshapes: [] };
 
     if (handLandmarker && videoEl.readyState >= 2) {
       try {
-        handResult = handLandmarker.detectForVideo(videoEl, now);
-      } catch (_) { /* skip frame */ }
-    }
-    if (poseLandmarker && videoEl.readyState >= 2) {
-      try {
-        poseResult = poseLandmarker.detectForVideo(videoEl, now);
-      } catch (_) { /* skip frame */ }
-    }
-    if (faceLandmarker && videoEl.readyState >= 2) {
-      try {
-        faceResult = faceLandmarker.detectForVideo(videoEl, now);
-      } catch (_) { /* skip frame */ }
+        handResult = handLandmarker.detectForVideo(videoEl, Math.round(now));
+      } catch (err) {
+        // Skip individual frame glitch
+      }
     }
 
-    // ── Draw ────────────────────────────────────────────────────────────────
+    if (poseLandmarker && videoEl.readyState >= 2) {
+      try {
+        poseResult = poseLandmarker.detectForVideo(videoEl, Math.round(now));
+      } catch (_) {}
+    }
+
+    if (faceLandmarker && videoEl.readyState >= 2) {
+      try {
+        faceResult = faceLandmarker.detectForVideo(videoEl, Math.round(now));
+      } catch (_) {}
+    }
+
+    // ── Render ──
     ctx.save();
-    // Mirror the canvas so the user sees a natural reflection
+    // Mirror so user sees a natural reflection
     ctx.scale(-1, 1);
     ctx.translate(-width, 0);
 
-    // Draw video frame
+    // Draw video feed
     ctx.drawImage(videoEl, 0, 0, width, height);
 
-    // Overlay landmarks
-    drawHandLandmarks(ctx, handResult.landmarks, handResult.handednesses, width, height);
-    drawUpperBodyPose(ctx, poseResult.landmarks, width, height);
+    // Draw skeleton overlays
+    drawHandSkeleton(ctx, handResult.landmarks, handResult.handednesses, width, height);
+    if (poseResult.landmarks) {
+      drawUpperBodyPose(ctx, poseResult.landmarks, width, height);
+    }
 
     ctx.restore();
 
-    // FPS (drawn un-mirrored so text is readable)
-    drawFps(ctx, currentFps);
+    // ── Draw HUD elements (unmirrored) ──
+    ctx.save();
+    // FPS chip
+    ctx.font = 'bold 13px monospace';
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'black';
+    ctx.shadowBlur = 4;
+    ctx.fillText(`${Math.round(currentFps)} FPS`, 12, 22);
 
-    // ── Callback ────────────────────────────────────────────────────────────
+    // Hands detected badge on canvas
+    const handCount = handResult.landmarks ? handResult.landmarks.length : 0;
+    if (handCount > 0) {
+      ctx.fillStyle = '#10b981';
+      ctx.fillText(`● ${handCount} Hand${handCount > 1 ? 's' : ''} Tracked`, 12, 42);
+    } else {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.fillText(`○ Show hands to sign`, 12, 42);
+    }
+    ctx.restore();
+
+    // Update FPS element in DOM if present
+    const fpsEl = document.getElementById('sign-fps');
+    if (fpsEl) fpsEl.textContent = `${Math.round(currentFps)} FPS`;
+
+    // ── Dispatch callback to sign recognizer ──
     if (typeof onFrameCallback === 'function') {
       onFrameCallback({
-        hands:       handResult.landmarks,
-        handedness:  handResult.handednesses,
-        worldHands:  handResult.worldLandmarks,
-        pose:        poseResult.landmarks,
-        worldPose:   poseResult.worldLandmarks,
-        face:        faceResult.faceLandmarks,
-        blendshapes: faceResult.faceBlendshapes,
+        hands:       handResult.landmarks || [],
+        handedness:  handResult.handednesses || [],
+        worldHands:  handResult.worldLandmarks || [],
+        pose:        poseResult.landmarks || [],
+        worldPose:   poseResult.worldLandmarks || [],
+        face:        faceResult.faceLandmarks || [],
+        blendshapes: faceResult.faceBlendshapes || [],
         timestamp:   now,
       });
     }
@@ -308,7 +398,6 @@ window.initSignTracker = async function initSignTracker(videoEl, canvasEl, onFra
   animFrameId = requestAnimationFrame(processFrame);
 };
 
-// ── Stop ────────────────────────────────────────────────────────────────────────
 window.stopSignTracker = function stopSignTracker() {
   running = false;
 
@@ -317,19 +406,14 @@ window.stopSignTracker = function stopSignTracker() {
     animFrameId = null;
   }
 
-  if (stream) {
-    for (const track of stream.getTracks()) {
-      track.stop();
-    }
-    stream = null;
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
   }
 
-  // Clear canvas if we still have a reference through closure — caller can also clear manually
-  emitStatus('Tracking stopped');
+  emitStatus('Camera Stopped');
 };
 
-// ── Query ───────────────────────────────────────────────────────────────────────
 window.isSignTrackerRunning = function isSignTrackerRunning() {
   return running;
 };
-

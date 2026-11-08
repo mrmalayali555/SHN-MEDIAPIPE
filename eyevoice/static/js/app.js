@@ -31,7 +31,7 @@ let focusableElements = [];
 
 // Eye Gaze Dwell-Timer Selection State
 let dwellEnabled = true;
-const DWELL_TIME_MS = 800; // 0.8 seconds resting gaze to select
+const DWELL_TIME_MS = 1400; // 1.4 seconds deliberate resting gaze to select
 let dwellTimer = null;
 let dwellAnimFrame = null;
 let activeDwellCard = null;
@@ -40,7 +40,7 @@ function toggleDwellMode() {
   dwellEnabled = !dwellEnabled;
   const btn = document.getElementById('dwell-toggle-btn');
   if (btn) {
-    btn.textContent = dwellEnabled ? '⏱️ Eye Dwell Click: ON (0.8s)' : '⏱️ Eye Dwell Click: OFF';
+    btn.textContent = dwellEnabled ? '⏱️ Eye Dwell Click: ON (1.4s)' : '⏱️ Eye Dwell Click: OFF';
     btn.style.color = dwellEnabled ? 'var(--good)' : 'var(--text-muted)';
   }
   showToast(dwellEnabled ? "Eye Dwell auto-selection enabled" : "Eye Dwell selection disabled (use click/enter)");
@@ -70,6 +70,7 @@ function startDwell(cardEl) {
   cancelDwell();
 
   activeDwellCard = cardEl;
+  window.currentDwellStartTime = performance.now();
   let hBar = cardEl.querySelector('.dwell-progress-bar');
   if (!hBar && !cardEl.classList.contains('btn-perm-back')) {
     hBar = document.createElement('div');
@@ -421,12 +422,15 @@ function handleGazeData(data) {
       startDwell(card);
     }
 
-    // Voluntary Single Blink Confirmation (only when not in multi-blink sequence)
-    if (data.blink && blinkCounter === 1 && !systemTrackingPaused) {
-      cancelDwell(card);
-      playClickChime();
-      card.click();
-      showToast("Blink Confirmed!");
+    // Voluntary Single Blink Confirmation (only when deliberately looking at card > 300ms)
+    if (data.blink && blinkCounter === 1 && !systemTrackingPaused && activeDwellCard === card) {
+      const dwellElapsed = performance.now() - (window.currentDwellStartTime || 0);
+      if (dwellElapsed > 300) {
+        cancelDwell(card);
+        playClickChime();
+        card.click();
+        showToast("Blink Confirmed!");
+      }
     }
   } else {
     if (lastGazeCard) {
